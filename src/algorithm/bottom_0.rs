@@ -1,18 +1,13 @@
 
 use ndarray::prelude::*;
 use plotters::prelude::*;
-use image::{imageops::FilterType, ImageFormat};
-use std::fs::File;
-use std::io::BufReader;
-use image::{DynamicImage,  open, Rgba};
-use plotters::element::BitMapElement;
 
 
-const OUT_FILE_NAME: &str = "plotters-doc-data/blit-bitmap.png";
+
 
 pub fn main(){
 
-  //리스트
+  //배열
   let mut  a=[1,2,3,4,5];
 
   //길이출력
@@ -24,18 +19,20 @@ pub fn main(){
   println!("{}",a[4]);
   //값대입
   a[4]=99;
-  println!("{:?}",a);
+  println!("{:?}",a[0]);
 
 
   //Rust에서의 기본적인 배열 입니다.
   //하지만 행렬 계산이나 배열계산등을 할떄 적합하지 않습니다.
   //ndarray라는 것을 사용하면 구현을 더욱 쉽게 할수 있습니다.(파이썬에서는 numpy)
 
-  
+  //지금 사용하는 버전
   
    let x= arr1(&[1,2,3,4]);
    println!("{:?}",x);
+   //1차원 배열인 벡터를 만들떄는 위와 같이 만들수 있습니다.
 
+   
    //ndarry산술연산
    let x= arr1(&[1.0,2.0,3.0]);
    let y= arr1(&[2.0,4.0,6.0]);
