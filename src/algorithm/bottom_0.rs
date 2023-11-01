@@ -1,8 +1,14 @@
+
 use ndarray::prelude::*;
+use plotters::prelude::*;
+use image::{imageops::FilterType, ImageFormat};
+use std::fs::File;
+use std::io::BufReader;
+use image::{DynamicImage,  open, Rgba};
+use plotters::element::BitMapElement;
 
 
-
-
+const OUT_FILE_NAME: &str = "plotters-doc-data/blit-bitmap.png";
 
 pub fn main(){
 
@@ -119,7 +125,7 @@ pub fn main(){
      */
     for row in x.genrows() {
       println!("{:?}", row);
-
+    }
       let x = arr2(&[[51, 55], [14, 19], [0, 4]]);
       //x를 1차원 배열로 평탄화
       let flattened: Array1<_> = x.iter().cloned().collect();
@@ -135,6 +141,63 @@ pub fn main(){
       //파이선에서는 marplotilb를사용하지만 rust에서는 plotters를 사용하겠습니다.
 
       
-      
-  }
+      // 데이터 준비
+      let x: Array1<f64> = Array::range(0., 6., 0.1);
+      let y: Array1<f64> = x.map(|x| x.sin());
+  
+      // 그래프 그리기
+      let root = BitMapBackend::new("plot.png", (800, 600)).into_drawing_area();
+      root.fill(&WHITE).unwrap();
+     //0에서 6까지 0.1간격으로 생성
+      let mut chart = ChartBuilder::on(&root)
+          .caption("Sine Wave", ("sans-serif", 50))
+          .build_cartesian_2d(0.0..6.0, -1.0..1.0)
+          .unwrap();
+  
+      chart.configure_mesh().draw().unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &RED)).unwrap();
+
+
+    // 데이터 준비
+    let x: Array1<f64> = Array::range(0., 6., 0.1);
+    let y1: Array1<f64> = x.map(|x| f64::sin(*x));
+    let y2: Array1<f64> = x.map(|x| f64::cos(*x));
+
+    // 그래프 그리기
+    let root = BitMapBackend::new("plot2.png", (800, 600)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption("sin & cos", ("sans-serif", 50))
+        .build_cartesian_2d(0.0..7.0, -1.0..1.0) // X축 범위를 조정
+        .expect("Error building chart");
+
+    chart.configure_mesh().draw().expect("Error drawing mesh");
+    
+    // 라벨을 직접 설정
+    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y1.iter().cloned()), &RED))
+        .expect("Error drawing series")
+        .label("sin")
+        .legend(|(x, y)| {
+            PathElement::new(vec![(x, y), (x + 20, y)], &RED)
+        });
+    
+    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y2.iter().cloned()), &BLUE))
+        .expect("Error drawing series")
+        .label("cos")
+        .legend(|(x, y)| {
+            PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
+        });
+    
+    chart.configure_series_labels()
+        .border_style(&BLACK)
+        .position(SeriesLabelPosition::UpperRight) // 범례 위치 설정
+        .draw()
+        .expect("Error drawing series labels");
+
+
+
+
+       
+   
 }
