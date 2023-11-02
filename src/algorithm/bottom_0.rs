@@ -92,7 +92,7 @@ pub fn main(){
      */
     let a=arr2(&[[1,2],[3,4]]);
     let b=arr1(&[10,20]);
-    println!("{}",a*b);
+    println!("a * b = {}",a*b);
     /*
     1차원 배열인 b가 2차원 배열 a와 똑같은 형상으로 변형된 후 원소별 연산이 이루어 집니다.
      */
@@ -108,9 +108,9 @@ pub fn main(){
     let x: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>>= arr2(&[[51,55],[14,19],[0,4]]);
     println!("{}",x);
     // 파이썬에서는 x[0]면 0 행을 출력할수 있지만 Rust에서는 0행을 출력하려면  x.index_axis(Axis(0), 0)을 사용해야합니다   
-    println!("{}",x.index_axis(Axis(0), 0));
+    println!("x[0] = {}",x.index_axis(Axis(0), 0));
 
-    println!("{}",x[[0,1]]); //0,1위치의 원소
+    println!("x[[0,1]]= {}",x[[0,1]]); //0,1위치의 원소
 
 
     /*
@@ -153,7 +153,10 @@ pub fn main(){
   
       chart.configure_mesh().draw().unwrap();
       chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &RED)).unwrap();
-
+    
+    /*
+    여기에 cos함수도 추가하여 그릴수도 잇습니다.
+     */
 
     // 데이터 준비
     let x: Array1<f64> = Array::range(0., 6., 0.1);
