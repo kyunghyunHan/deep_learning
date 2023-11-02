@@ -1,3 +1,5 @@
+use ndarray::prelude::*;
+
 /*
  퍼셉트론
  퍼셉트론은 신경망(딥러닝)의 기원이 되는 알고리즘 입니다.
@@ -50,24 +52,38 @@ AND구현
 
 
 
+
+
 */
 pub fn main(){
-    println!("{}",and(0.0,0.0));//0을 출력
-    println!("{}",and(1.0,0.0));//0을 출력
-    println!("{}",and(0.0,1.0));//0을 출력
-    println!("{}",and(1.0,1.0));//1을 출력
-
+    println!("{}",and2(0.0,0.0));//0을 출력
+    println!("{}",and2(1.0,0.0));//0을 출력
+    println!("{}",and2(0.0,1.0));//0을 출력
+    println!("{}",and2(1.0,1.0));//1을 출력
 }
-fn and(x1:f32,x2:f32)->i32{
-    let mut w1= 0.5;
-    let mut w2= 0.5;
-    let mut theta= 0.7;
-    let mut tmp=  x1*w1 +x2*w2;
+fn and(x1:f64,x2:f64)->i32{
+    let  w1= 0.5;
+    let  w2= 0.5;
+    let  theta= 0.7;
+    let  tmp=  x1*w1 +x2*w2;
     if tmp <=theta{
         return 0;
     }else{
         return 1
     }
+}
 
+fn and2(x1:f64,x2:f64)->i32{
+    let  x= arr1(&[x1,x2]);
+    let  w= arr1(&[0.5,0.5]);
+    let b= -0.7;
+    // let mut tmp= ndarray::sum
+    let tmp = (&w * &x).sum()+b;
+    if tmp <=0.0 {
+        return 0
+    }else {
+        return 1
+    }
+    
 }
 fn xor(){}
