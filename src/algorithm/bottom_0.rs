@@ -2,9 +2,6 @@
 use ndarray::prelude::*;
 use plotters::prelude::*;
 
-
-
-
 pub fn main(){
 
   //배열
@@ -167,7 +164,7 @@ pub fn main(){
     let root = BitMapBackend::new("plot2.png", (800, 600)).into_drawing_area();
     root.fill(&WHITE).unwrap();
 
-    let mut chart = ChartBuilder::on(&root)
+    let mut chart: ChartContext<'_, BitMapBackend<'_>, Cartesian2d<plotters::coord::types::RangedCoordf64, plotters::coord::types::RangedCoordf64>> = ChartBuilder::on(&root)
         .caption("sin & cos", ("sans-serif", 50))
         .build_cartesian_2d(0.0..7.0, -1.0..1.0) // X축 범위를 조정
         .expect("Error building chart");
