@@ -1,3 +1,4 @@
+use ndarray::prelude::*;
 /*
 신경망
 
@@ -60,10 +61,13 @@ exp(-x)는 e⁻ˣ를 뜻하며 e는 자연상수로 2.7182..의값을 갖는 실
 
 인수 x는 실수만 받아들입니다.
 즉 step_function(3.0)은 되지만 배열을 인수로 넣을수 없습니다
-수정을 하면
+ndarry스타일로 변경하려면
 
-
-
+파이썬에서는
+def step_function(x):
+    y=x>0
+    return y.astyoe(np.int)
+으로 사용이 가능합니다
 */
 /*계단함수의 그래프 */
 /*시그모이드 함수 구현 */
@@ -84,6 +88,8 @@ exp(-x)는 e⁻ˣ를 뜻하며 e는 자연상수로 2.7182..의값을 갖는 실
 
 
 
+
+
 fn step_function(x:i32)->i32{
   if x>0{
     return 1
@@ -92,10 +98,44 @@ fn step_function(x:i32)->i32{
     return 0
   }
 }
+fn stet_function(x: Array1<f32>) -> Array1<f32> {
+    x.map(|&val| if val > 0.0{ 1.0 } else { 0.0 })
+}
+
 /*
 def stet_function(x):
     x=x>0
     return y.astype(np.int)
 
 */
-pub fn main(){}
+pub fn main(){
+let x= arr1(&[-5.0,5.0,0.1]);
+let y = stet_function(x);
+
+/*시그모이드 함수 구현
+*/
+/*다차원 배열 */
+
+let a= arr1(&[1,2,3,4]);
+print!("{}",a);
+
+//차원의 수 확인
+a.ndim();
+//형상:원소 개로 구성
+a.shape();
+
+let b= arr2(&[[1,2],[3,4],[5,6]]);
+println!("{}",b);
+b.ndim();
+b.shape();
+
+
+
+
+}
+//시그모이드 
+
+
+fn sigmoid(){
+
+}
