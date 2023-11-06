@@ -1,6 +1,8 @@
 use std::array;
 
 use ndarray::prelude::*;
+use plotters::prelude::*;
+
 /*
 신경망
 
@@ -153,10 +155,34 @@ pub fn main(){
 let x= arr1(&[-5.0,5.0,0.1]);
 let y = stet_function(x);
 
-/*시그모이드 함수 구현
-*/
-/*다차원 배열 */
+/*시그모이드 함수 구현*/
+let  x = Array1::from(vec![-1.0, 1.0, 2.0]);
+println!("{}",sigmoid(&x));
 
+let t= arr1(&[1.0,2.0,3.0]);
+println!("{}",1.0+&t);
+
+println!("{}",1.0/&t);
+
+
+let  x = Array::range(-5.0, 5., 0.1);
+let y= sigmoid(&x);
+
+      // 그래프 그리기
+      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
+      root.fill(&WHITE).unwrap();
+     //0에서 6까지 0.1간격으로 생성
+      let mut chart = ChartBuilder::on(&root)
+          .caption("sigmoid", ("sans-serif", 50))
+          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+          .unwrap();
+  
+      chart.configure_mesh().draw().unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &RED)).unwrap();
+    
+
+
+/*다차원 배열 */
 let a= arr1(&[1,2,3,4]);
 print!("{}",a);
 
@@ -228,10 +254,12 @@ let a1 = x.dot(&w1)+b1;
 println!("{:?}",a1.shape());
 
 
+
+
 }
 //시그모이드 
 
 
-fn sigmoid(){
-
+fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
+  x.map(|val| 1.0 / (1.0 + f64::exp(-val)))
 }
