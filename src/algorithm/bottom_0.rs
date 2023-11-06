@@ -140,7 +140,7 @@ pub fn main(){
       let y: Array1<f64> = x.map(|x| x.sin());
   
       // 그래프 그리기
-      let root = BitMapBackend::new("plot.png", (800, 600)).into_drawing_area();
+      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("plot.png", (800, 600)).into_drawing_area();
       root.fill(&WHITE).unwrap();
      //0에서 6까지 0.1간격으로 생성
       let mut chart = ChartBuilder::on(&root)
