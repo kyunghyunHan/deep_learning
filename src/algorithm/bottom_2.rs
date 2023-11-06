@@ -1,5 +1,3 @@
-use std::array;
-
 use ndarray::prelude::*;
 use plotters::prelude::*;
 
@@ -73,7 +71,11 @@ def step_function(x):
     return y.astyoe(np.int)
 으로 사용이 가능합니다
 */
-/*계단함수의 그래프 */
+/*계단함수의 그래프 
+
+plotters 라이브러리를 사용합니다.
+
+*/
 /*시그모이드 함수 구현 */
 /*시그모이드 함수 와 계단함수 비교 */
 /*비선형 함슈 */
@@ -141,7 +143,7 @@ fn step_function(x:i32)->i32{
     return 0
   }
 }
-fn stet_function(x: Array1<f32>) -> Array1<f32> {
+fn stet_function(x: &Array1<f64>) -> Array1<f64> {
     x.map(|&val| if val > 0.0{ 1.0 } else { 0.0 })
 }
 
@@ -153,8 +155,24 @@ def stet_function(x):
 */
 pub fn main(){
 let x= arr1(&[-5.0,5.0,0.1]);
-let y = stet_function(x);
+let y = stet_function(&x);
+/*계단함수 구현 */
+let  x = Array::range(-5.0, 5., 0.1);
+let y= stet_function(&x);
 
+      // 그래프 그리기
+      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("step_function.png", (800, 600)).into_drawing_area();
+      root.fill(&WHITE).unwrap();
+     //x축 -6.0 부터 6까지
+     //y축 -0.1부터 1.1까지
+      let mut chart = ChartBuilder::on(&root)
+          .caption("step_function", ("sans-serif", 50))
+          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+          .unwrap();
+  
+      chart.configure_mesh().draw().unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
+     
 /*시그모이드 함수 구현*/
 let  x = Array1::from(vec![-1.0, 1.0, 2.0]);
 println!("{}",sigmoid(&x));
@@ -166,21 +184,40 @@ println!("{}",1.0/&t);
 
 
 let  x = Array::range(-5.0, 5., 0.1);
-let y= sigmoid(&x);
+let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= sigmoid(&x);
 
       // 그래프 그리기
       let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
       root.fill(&WHITE).unwrap();
-     //0에서 6까지 0.1간격으로 생성
+     //x축 -6.0 부터 6까지
+     //y축 -0.1부터 1.1까지
       let mut chart = ChartBuilder::on(&root)
           .caption("sigmoid", ("sans-serif", 50))
           .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
           .unwrap();
   
       chart.configure_mesh().draw().unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &RED)).unwrap();
-    
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
 
+
+/*계단 함수와 비교 */
+
+let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= stet_function(&x);
+
+      // 그래프 그리기
+      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
+      root.fill(&WHITE).unwrap();
+     //x축 -6.0 부터 6까지
+     //y축 -0.1부터 1.1까지
+      let mut chart = ChartBuilder::on(&root)
+          .caption("sigmoid", ("sans-serif", 50))
+          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+          .unwrap();
+  
+      chart.configure_mesh().draw().unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
+      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y2.iter().cloned()), &RED)).unwrap();
 
 /*다차원 배열 */
 let a= arr1(&[1,2,3,4]);
@@ -254,12 +291,71 @@ let a1 = x.dot(&w1)+b1;
 println!("{:?}",a1.shape());
 
 
+let z1= sigmoid(&a1);
+println!("{}",a1);
+println!("{}",z1);
 
+let w2= arr2(&[[0.1,0.4],[0.2,0.5],[0.3,0.6]]);
+let b2= arr1(&[0.1,0.2]);
 
+println!("{:?}",z1.shape());
+println!("{:?}",w2.shape());
+println!("{:?}",b2.shape());
+
+let a2= z1.dot(&w2)+b2;
+let z2 = sigmoid(&a2);
+
+let w3= arr2(&[[0.1,0.3],[0.2,0.4]]);
+let b3= arr1(&[0.1,0.2]);
+
+let a3= z2.dot(&w3)+b3;
+
+let y= idenity_function(&x);
+
+/*항등함수와 소프트맥스 함수 구현 */
+let a = arr1(&[0.3,2.9,4.0]);
+let exp_a=   &a.map(|val: &f64|  f64::exp(*val));
+println!("{}",exp_a);
+let sum_exp_a =exp_a.sum();
+println!("{}",sum_exp_a);
+
+let y= exp_a/sum_exp_a;
+println!("{}",&y);
 }
 //시그모이드 
 
 
 fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
-  x.map(|val| 1.0 / (1.0 + f64::exp(-val)))
+  x.map(|val: &f64| 1.0 / (1.0 + f64::exp(-val)))
 }
+
+/*ReLU */
+
+fn relu(x: &Array1<f64>) -> Array1<f64> {
+  x.mapv(|element| if element > 0.0 { element } else { 0.0 })
+}
+
+/*항동함수 */
+
+fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
+  return x.clone()
+}
+
+
+fn init_net_work(){
+
+}
+
+fn forward(){
+  
+}
+
+fn softmax(){
+
+
+}
+
+fn get_data(){}
+
+fn init_network(){}
+fn predict(){}
