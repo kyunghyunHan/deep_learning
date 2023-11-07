@@ -16,8 +16,8 @@ pub struct Mnist {
 
 impl Mnist {
     pub fn new() -> Mnist {
-        let train_size = 50_000;
-        let val_size = 10_000;
+        let train_size = 60_000;
+        let val_size = 0;
         let test_size = 10_000;
 
         // Deconstruct the returned Mnist struct.
