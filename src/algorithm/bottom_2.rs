@@ -1,6 +1,69 @@
 use ndarray::{prelude::*};
 use plotters::prelude::*;
 use ndarray_stats::QuantileExt;
+use ndarray::prelude::*;
+use mnist::MnistBuilder;
+
+
+pub struct Mnist {
+    pub train_x: Array2<f32>,
+    pub train_y: Array2<f32>,
+    pub validation_x: Array2<f32>,
+    pub validation_y: Array2<f32>,
+    pub test_x: Array2<f32>,
+    pub test_y: Array2<f32>,
+}
+
+impl Mnist {
+    pub fn new() -> Mnist {
+        let train_size = 50_000;
+        let val_size = 10_000;
+        let test_size = 10_000;
+
+        // Deconstruct the returned Mnist struct.
+        let mnist = MnistBuilder::new()
+            .base_path("mnist")
+            .label_format_one_hot()
+            .training_set_length(train_size)
+            .validation_set_length(val_size)
+            .test_set_length(test_size)
+            .finalize();
+
+        fn convert(data: &Vec<u8>, width: usize, height: usize) -> Array2<f32> {
+            Array::from_shape_fn((width, height), |(i, j)| data[i * height + j] as f32 / 255.0)
+        }
+
+        Mnist {
+            train_x: convert(&mnist.trn_img, train_size as usize, 784) / 255.0,
+            train_y: convert(&mnist.trn_lbl, train_size as usize, 10),
+            validation_x: convert(&mnist.val_img, val_size as usize, 784) / 255.0,
+            validation_y: convert(&mnist.val_lbl, val_size as usize, 10),
+            test_x: convert(&mnist.tst_img, test_size as usize, 784) / 255.0,
+            test_y: convert(&mnist.tst_lbl, test_size as usize, 10),
+        }
+    }
+
+    fn get_batch(x: &Array2<f32>, y: &Array2<f32>, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+        let end = (offset + batch_size).min(y.shape()[0]);
+        let batch_x = x.slice(s![offset..end, ..]);
+        let batch_y = y.slice(s![offset..end, ..]);
+
+        (batch_x.to_owned(), batch_y.to_owned())
+    }
+
+    pub fn get_train_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+        Mnist::get_batch(&self.train_x, &self.train_y, offset, batch_size)
+    }
+
+    pub fn get_validation_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+        Mnist::get_batch(&self.validation_x, &self.validation_y, offset, batch_size)
+    }
+
+    pub fn get_test_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+        Mnist::get_batch(&self.test_x, &self.test_y, offset, batch_size)
+    }
+}
+
 /*
 신경망
 
@@ -206,8 +269,36 @@ softmax()함수를 사용하면 신경망의 출력을 다음과 같이 계산�
 이와 같이 소프트 맥스의 출력은 0에서 1.0사이의 실수입니다. 소프트맥수의 총합은 1입니다.
 출력 총합이 1이 된다는 점은 소프트맥스함수의 중요한 성질입니다.
 이성질 덕분에 소프트맥스 함수의 출력을 확률로 해석이 가능합니다.
+
+y[0]의 확률은 0.018(1.8%) ,y[1]의 확률은 0.245(24.5%) y[2]의 확률운 0.737(73.7%)로 해석이 가능합니다.
+이결과확률로 답은 y[2]가 정답이다 라고할수 있습니다.
+즉 소프트맥스 함수를 이용하여 문제를 확률적으로 대응할수 있게 됩니다.
+
+주의할점은 소프트맥스 함수를 적용해도 각 원소의 대소 관계는 변하지 않습니다.이는
+y= exp(x)가 단조 증가 함수이 때문입니다.
+실제로a의 원소 사이의 대소 관계가 y의 원소 사이의 대소 관계로 그대로 이어집니다.
+
+신경망을 이용한 분류에서는 일반적으로 가장 큰 출력을 내는 뉴런에 해당하는 클래스로만 인식합니다.
+그리고 소프트맥스 함수를 적용해도 출력이 가장 큰 뉴런의 위치는 달라지지 않습니다.
+결과적으로 신경망으로 분류할떄는 출력층의 소프트맥스 함수를 생략해도 됩니다.
+
+
+츨력충의 뉴런수는 문제에 맞게 적정히 정해야 합니다.분류에서는 분류하고 싶은 클래스 수로 설정하는 것이 일반적입니다.
+예를 들어 이미지를 숫자 0부터 9중 하나로 분류하는 문제라면 출력충의 뉴런을 10개로설정합니다.
+
+출력충의 뉴런은 위에서부터 0,1,...,9에 대응하며 뉴런의 회색 농도가 해당 뉴런의 출력값의 크기를 의미합니다.
+위에서는 가장 짙은 y2뉴런이 가장 큰 값을 출력합니다.이 신경망이 선택한 클래스는 y2 숫자 2를 로 판단했음을 의미합니다.
 */
-/*손글씨 숫자 읺식 */
+/*손글씨 숫자 인식
+
+추론과정을 신경망의 순전파 라고도 합니다.
+
+MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 이미지가 60,000장 ,시험이미지 10,000장 준비되어 있습니다.
+이미지 데이터는 28 x 28 크기의 회색조 이미지이며 각 픽셀은 0에서 255까지의 값을 취합니다.
+
+
+
+*/
 
 
 
