@@ -4,14 +4,14 @@ use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
 use mnist::MnistBuilder;
 
-
+#[derive(Debug)]
 pub struct Mnist {
-    pub train_x: Array2<f32>,
-    pub train_y: Array2<f32>,
-    pub validation_x: Array2<f32>,
-    pub validation_y: Array2<f32>,
-    pub test_x: Array2<f32>,
-    pub test_y: Array2<f32>,
+    pub train_x: Array2<f64>,
+    pub train_y: Array2<f64>,
+    pub validation_x: Array2<f64>,
+    pub validation_y: Array2<f64>,
+    pub test_x: Array2<f64>,
+    pub test_y: Array2<f64>,
 }
 
 impl Mnist {
@@ -22,15 +22,15 @@ impl Mnist {
 
         // Deconstruct the returned Mnist struct.
         let mnist = MnistBuilder::new()
-            .base_path("mnist")
+            .base_path("dataset")
             .label_format_one_hot()
             .training_set_length(train_size)
             .validation_set_length(val_size)
             .test_set_length(test_size)
             .finalize();
 
-        fn convert(data: &Vec<u8>, width: usize, height: usize) -> Array2<f32> {
-            Array::from_shape_fn((width, height), |(i, j)| data[i * height + j] as f32 / 255.0)
+        fn convert(data: &Vec<u8>, width: usize, height: usize) -> Array2<f64> {
+            Array::from_shape_fn((width, height), |(i, j)| data[i * height + j] as f64 / 255.0)
         }
 
         Mnist {
@@ -43,7 +43,7 @@ impl Mnist {
         }
     }
 
-    fn get_batch(x: &Array2<f32>, y: &Array2<f32>, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+    fn get_batch(x: &Array2<f64>, y: &Array2<f64>, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
         let end = (offset + batch_size).min(y.shape()[0]);
         let batch_x = x.slice(s![offset..end, ..]);
         let batch_y = y.slice(s![offset..end, ..]);
@@ -51,15 +51,15 @@ impl Mnist {
         (batch_x.to_owned(), batch_y.to_owned())
     }
 
-    pub fn get_train_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+    pub fn get_train_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
         Mnist::get_batch(&self.train_x, &self.train_y, offset, batch_size)
     }
 
-    pub fn get_validation_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+    pub fn get_validation_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
         Mnist::get_batch(&self.validation_x, &self.validation_y, offset, batch_size)
     }
 
-    pub fn get_test_batch(&self, offset: usize, batch_size: usize) -> (Array2<f32>, Array2<f32>) {
+    pub fn get_test_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
         Mnist::get_batch(&self.test_x, &self.test_y, offset, batch_size)
     }
 }
@@ -513,7 +513,21 @@ println!("{}",(&a-c).mapv(|x |f64::exp(x))/(&a-c).mapv(|x |f64::exp(x)).sum());
 let a=arr1(&[0.3,2.9,4.0]);
 let y =softmax(&a);
 println!("{}",y);
-println!("{}",y.sum())
+println!("{}",y.sum());
+
+let mnist = Mnist::new();
+let x_train: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.train_x;
+let t_train: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.train_y;
+let x_test: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.test_x;
+let y_test: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.test_y;
+
+
+println!("{:?}",x_train.shape());
+println!("{:?}",t_train.shape());
+
+println!("{:?}",x_test.shape());
+println!("{:?}",y_test.shape());
+
 }
 //시그모이드 
 
