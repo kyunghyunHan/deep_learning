@@ -1,6 +1,7 @@
 mod algorithm;
 mod fast_deep;
 mod activation_function;
+mod university;
 fn main(){
     // algorithm::bottom_0::main();
     // algorithm::bottom_1::main();
