@@ -2,6 +2,7 @@ mod algorithm;
 mod fast_deep;
 mod activation_function;
 mod university;
+mod math;
 fn main(){
     // algorithm::bottom_0::main();
     // algorithm::bottom_1::main();
@@ -12,7 +13,9 @@ fn main(){
     /*===============fast_depp================ */
 
     /*===============activation_function================ */
-    activation_function::sigmoid::main();
+    // activation_function::sigmoid::main();
     /*===============activation_function================ */
-
+     /*===============math================ */
+     math::numpy::main();
+          /*===============math================ */
 }
