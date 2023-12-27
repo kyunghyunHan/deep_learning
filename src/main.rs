@@ -14,8 +14,9 @@ fn main(){
 
     /*===============activation_function================ */
     // activation_function::sigmoid::main();
+    activation_function::tanh::main();
     /*===============activation_function================ */
-     /*===============math================ */
-     math::numpy::main();
-          /*===============math================ */
+    /*===============math================ */
+    //  math::numpy::main();
+    /*===============math================ */
 }

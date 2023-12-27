@@ -10,3 +10,4 @@ pub mod sigmoid;
 pub mod relu;
 pub mod sign;
 pub mod identity;
+pub mod tanh;
