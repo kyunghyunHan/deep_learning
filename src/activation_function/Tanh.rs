@@ -1,7 +1,7 @@
 use ndarray::prelude::*;
 
  fn tanh(x:f32)->f32{
-    ((x.exp() - (-x).exp()) / (x.exp() + (-x).exp()))
+    (x.exp() - (-x).exp()) / (x.exp() + (-x).exp())
 
  }
  fn tanh_function(x: &Array1<f64>) -> Array1<f64> {
