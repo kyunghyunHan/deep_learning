@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-burn = { version = "0.11.1", features = ["wgpu"] }
+burn = { version = "0.11.1", features = ["wgpu", "train"] }
 serde="1"
 ndarray = "0.15.6"
 plotters = "0.3.5"

@@ -21,7 +21,7 @@ fn main(){
     //  math::numpy::main();
     /*===============math================ */
     /*===============burn_book================ */
-     burn_book::burn_0::main();
+     burn_book::burn_1::main();
     /*===============burn_book================ */
 
 }
