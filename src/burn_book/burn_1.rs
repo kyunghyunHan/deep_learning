@@ -2,14 +2,21 @@ use burn::{
     config::Config,
     module::Module,
     nn::{
-        conv::{Conv2d, Conv2dConfig},
+        conv::{Conv2d, Conv2dConfig},//기본convolution
         pool::{AdaptiveAvgPool2d, AdaptiveAvgPool2dConfig},
         Dropout, DropoutConfig, Linear, LinearConfig, ReLU,
     },
     tensor::{backend::Backend, Tensor},
 };
 #[derive(Module, Debug)]//딥러닝 모듈생성
+/*
+기본 convolution neural network
+두개의 convolution layer 
+두개의 linear layer
+pooling
+ReLU
 
+*/
 pub struct Model<B: Backend> {//BackEnd:새모델이 모든 벡엔드에서 실행할수 있게함
     conv1: Conv2d<B>,
     conv2: Conv2d<B>,
