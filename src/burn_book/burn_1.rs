@@ -260,7 +260,7 @@ pub fn main(){
      type MyAutodiffBackend = Autodiff<MyBackend>;
      let device = burn::backend::wgpu::WgpuDevice::default();
      train::<MyAutodiffBackend>(
-        "/tmp/guide",
+        "./train",
         TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
         device,
     );
