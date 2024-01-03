@@ -3,7 +3,9 @@ use plotters::prelude::*;
 use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
 use mnist::MnistBuilder;
-
+use std::fs::File;
+use std::io::Read;
+use bincode;
 #[derive(Debug)]
 pub struct Mnist {
     pub train_x: Array2<f64>,
@@ -516,10 +518,10 @@ println!("{}",y);
 println!("{}",y.sum());
 
 let mnist = Mnist::new();
-let x_train: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.train_x;
-let t_train: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.train_y;
-let x_test: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.test_x;
-let y_test: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>= mnist.test_y;
+let x_train= mnist.train_x;
+let t_train= mnist.train_y;
+let x_test= mnist.test_x;
+let y_test= mnist.test_y;
 
 
 println!("{:?}",x_train.shape());
@@ -547,16 +549,25 @@ fn relu(x: &Array1<f64>) -> Array1<f64> {
 fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
   return x.clone()
 }
+struct Network{
 
+}
+fn init_network() -> Network {
+    let mut file = File::open("sample_weight.pkl").expect("Unable to open file");
+    let mut buffer = Vec::new();
 
-fn init_net_work(){
+    file.read_to_end(&mut buffer).expect("Unable to read file");
 
+    // Deserialize the data using bincode
+    let network: Network = bincode::deserialize(&buffer).expect("Unable to deserialize data");
+
+    network
 }
 
 fn forward(){
   
 }
-
+fn predict(){}
 fn softmax(a:&Array1<f64>)->Array1<f64>{
   let c: f64 =a[a.argmax().unwrap()];
   let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
@@ -564,7 +575,5 @@ fn softmax(a:&Array1<f64>)->Array1<f64>{
   exp_a / sum_exp_a
 }
 
-fn get_data(){}
 
-fn init_network(){}
-fn predict(){}
+

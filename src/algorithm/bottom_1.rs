@@ -153,6 +153,7 @@ NAND에서 컴퓨터까지
     let w= arr1(&[0.5,0.5]);
     //편향
     let b= -0.7;
+
 //    println!("{}",&w*&x);
 //    println!("{}",(&w*&x).sum());
 //    println!("{}",(&w*&x).sum()+b)//대략 0.2
