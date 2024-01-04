@@ -552,17 +552,17 @@ fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
 struct Network{
 
 }
-fn init_network() -> Network {
-    let mut file = File::open("sample_weight.pkl").expect("Unable to open file");
-    let mut buffer = Vec::new();
+// fn init_network() -> Network {
+//     let mut file = File::open("sample_weight.pkl").expect("Unable to open file");
+//     let mut buffer = Vec::new();
 
-    file.read_to_end(&mut buffer).expect("Unable to read file");
+//     file.read_to_end(&mut buffer).expect("Unable to read file");
 
-    // Deserialize the data using bincode
-    let network: Network = bincode::deserialize(&buffer).expect("Unable to deserialize data");
+//     // Deserialize the data using bincode
+//     let network: Network = bincode::deserialize(&buffer).expect("Unable to deserialize data");
 
-    network
-}
+//     network
+// }
 
 fn forward(){
   
