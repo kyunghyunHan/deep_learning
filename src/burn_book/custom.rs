@@ -39,16 +39,15 @@ use std::{
   
     path::{Path, PathBuf},
 };
-// use polars::
 use burn::tensor::ElementConversion;
-const WIDTH: usize = 28;
-const HEIGHT: usize = 28;
-#[derive(Deserialize,  Debug, Clone)]
-pub struct DiabetesPatient {
-    pub width: [[f32; 28];28],
 
-    
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DiabetesPatient {
+    #[serde(rename = "Width")]
+
+    pub width:i64,
     #[serde(rename = "Height")]
+
     pub height:i64
 
 }
@@ -84,8 +83,8 @@ impl Dataset<DiabetesPatient> for DiabetesDataset {
 
 #[derive(Module, Debug)]//딥러닝 모듈생성
 pub struct Model<B: Backend> {//BackEnd:새모델이 모든 벡엔드에서 실행할수 있게함
-    conv1: Conv2d<B>,
-    conv2: Conv2d<B>,
+    // conv1: Conv2d<B>,
+    // conv2: Conv2d<B>,
     pool: AdaptiveAvgPool2d,
     dropout: Dropout,
     linear1: Linear<B>,
@@ -95,32 +94,33 @@ pub struct Model<B: Backend> {//BackEnd:새모델이 모든 벡엔드에서 실�
 //전방향 패스
 impl<B: Backend> Model<B> {
   
-    pub fn forward(&self, images: Tensor<B, 3>) -> Tensor<B, 2> {
-        let [batch_size, height, width] = images.dims();
+    pub fn forward(&self, images: Tensor<B, 1>) -> Tensor<B, 2> {
+        let [batch_size] = images.dims();
 
         // Create a channel at the second dimension.
-        let x = images.reshape([batch_size, 1, height, width]);
+        let x = images.reshape([batch_size,  1]);
 
 
-        let x = self.conv1.forward(x); // [batch_size, 8, _, _]
+        
+        // let x = self.conv1.forward(x); // [batch_size, 8, _, _]
         let x = self.dropout.forward(x);
-        let x = self.conv2.forward(x); // [batch_size, 16, _, _]
+        // let x = self.conv2.forward(x); // [batch_size, 16, _, _]
         let x = self.dropout.forward(x);
         let x = self.activation.forward(x);
 
-        let x = self.pool.forward(x); // [batch_size, 16, 8, 8]
-        let x = x.reshape([batch_size, 16 * 8 * 8]);
+        // let x = self.pool.forward(x); // [batch_size, 16, 8, 8]
+        let x = x.reshape([batch_size, 1 ]);
         let x = self.linear1.forward(x);
         let x = self.dropout.forward(x);
         let x = self.activation.forward(x);
-
+   
+        
         self.linear2.forward(x) // [batch_size, num_classes]
     }
 
-
     pub fn forward_classification(
         &self,
-        images: Tensor<B,3>,
+        images: Tensor<B,1>,
         targets: Tensor<B, 1, Int>,
     ) -> ClassificationOutput<B> {
         let output = self.forward(images);
@@ -160,9 +160,9 @@ impl ModelConfig {
         Model {
             //커널 크기 3사용
             //채널 1에서 8로 확장
-            conv1: Conv2dConfig::new([1, 8], [3, 3]).init(),
-            //8에서 16으로 확장
-            conv2: Conv2dConfig::new([8, 16], [3, 3]).init(),
+            // conv1: Conv2dConfig::new([1, 8], [3, 3]).init(),
+            // //8에서 16으로 확장
+            // conv2: Conv2dConfig::new([8, 16], [3, 3]).init(),
             //적응형 평균 폴링 모듈을 사용 이미지의 차원을 8x8으로 축소
             pool: AdaptiveAvgPool2dConfig::new([8, 8]).init(),
             activation: ReLU::new(),
@@ -173,8 +173,8 @@ impl ModelConfig {
     }
     pub fn init_with<B: Backend>(&self, record: ModelRecord<B>) -> Model<B> {
         Model {
-            conv1: Conv2dConfig::new([1, 8], [3, 3]).init_with(record.conv1),
-            conv2: Conv2dConfig::new([8, 16], [3, 3]).init_with(record.conv2),
+            // conv1: Conv2dConfig::new([1, 8], [3, 3]).init_with(record.conv1),
+            // conv2: Conv2dConfig::new([8, 16], [3, 3]).init_with(record.conv2),
             pool: AdaptiveAvgPool2dConfig::new([8, 8]).init(),
             activation: ReLU::new(),
             linear1: LinearConfig::new(1, self.hidden_size).init_with(record.linear1),
@@ -205,33 +205,22 @@ impl<B: Backend> Tester<B> {
 
 #[derive(Clone, Debug)]
 pub struct Test<B: Backend> {
-    pub widths: Tensor<B, 3>,
+    pub widths: Tensor<B, 1>,
     pub targets: Tensor<B, 1, Int>,
 }
 
 impl<B: Backend> Batcher<DiabetesPatient, Test<B>> for Tester<B> {
     fn batch(&self, items: Vec<DiabetesPatient>) -> Test<B> {
-
-        let images = items
+        let widths = items
         .iter()
-        .map(|item| Data::<f32, 2>::from(item.width))
-        .map(|data| Tensor::<B, 2>::from_data(data.convert()))
-        .map(|tensor| tensor.reshape([1, 28, 28]))
-        // Normalize: make between [0,1] and make the mean=0 and std=1
-        // values mean=0.1307,std=0.3081 are from the PyTorch MNIST example
-        // https://github.com/pytorch/examples/blob/54f4572509891883a947411fd7239237dd2a39c3/mnist/main.py#L122
-        .map(|tensor| ((tensor / 255) - 0.1307) / 0.3081)
+        .map(|item| Tensor::<B, 1>::from_data(Data::from([(item.width as f64).elem()])))
         .collect();
-        // let widths = items
-        // .iter()
-        // .map(|item| Tensor::<B, 1>::from_data(Data::from([(item.width as f64).elem()])))
-        // .collect();
         let targets = items
             .iter()
             .map(|item| Tensor::<B, 1, Int>::from_data(Data::from([(item.height as i64).elem()])))
             .collect();
 
-        let widths = Tensor::cat(images, 0).to_device(&self.device);
+        let widths = Tensor::cat(widths, 0).to_device(&self.device);
         let targets = Tensor::cat(targets, 0).to_device(&self.device);
 
         Test { widths, targets }
@@ -295,15 +284,15 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .expect("Trained model should be saved successfully");
 }
 pub fn main(){
-    // let config = ModelConfig::new(10, 1);
-    //  println!("{}",config);
-    //  type MyBackend = Wgpu<AutoGraphicsApi, f32, i32>;
-    //  type MyAutodiffBackend = Autodiff<MyBackend>;
-    //  let device = burn::backend::wgpu::WgpuDevice::default();
-    //  train::<MyAutodiffBackend>(
-    //     "./train",
-    //     TrainingConfig::new(ModelConfig::new(10, 1), AdamConfig::new()),
-    //     device,
-    // );
+    let config = ModelConfig::new(10, 1);
+     println!("{}",config);
+     type MyBackend = Wgpu<AutoGraphicsApi, f32, i32>;
+     type MyAutodiffBackend = Autodiff<MyBackend>;
+     let device = burn::backend::wgpu::WgpuDevice::default();
+     train::<MyAutodiffBackend>(
+        "./train",
+        TrainingConfig::new(ModelConfig::new(10, 1), AdamConfig::new()),
+        device,
+    );
 
 }
