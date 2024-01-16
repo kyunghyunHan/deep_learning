@@ -145,14 +145,11 @@ impl ModelConfig {
         }
     }
 }
-
 /*
 data
 Batcher 구조체를 정의 => 텐서가 모델에 전달되기 전에  전송되어야 하는장치
 
 */
-
-
 
 pub struct MNISTBatcher<B: Backend> {
     device: B::Device,
@@ -246,9 +243,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
             config.optimizer.init(),
             config.learning_rate,
         );
-
     let model_trained = learner.fit(dataloader_train, dataloader_test);
-
     model_trained
         .save_file(format!("{artifact_dir}/model"), &CompactRecorder::new())
         .expect("Trained model should be saved successfully");
