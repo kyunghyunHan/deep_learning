@@ -1,2 +1,2 @@
-pub mod numpy;
-pub mod probility;
+pub mod math01;
+pub mod math02;
