@@ -40,7 +40,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use burn::tensor::ElementConversion;
-
+use burn::record::Recorder;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DiabetesPatient {
     #[serde(rename = "Width")]
@@ -289,10 +289,30 @@ pub fn main(){
      type MyBackend = Wgpu<AutoGraphicsApi, f32, i32>;
      type MyAutodiffBackend = Autodiff<MyBackend>;
      let device = burn::backend::wgpu::WgpuDevice::default();
-     train::<MyAutodiffBackend>(
-        "./train",
-        TrainingConfig::new(ModelConfig::new(10, 1), AdamConfig::new()),
-        device,
-    );
+    //  train::<MyAutodiffBackend>(
+    //     "./train",
+    //     TrainingConfig::new(ModelConfig::new(10, 1), AdamConfig::new()),
+    //     device,
+    // );
 
+
+    infer::<MyAutodiffBackend >("./train",device,DiabetesPatient{width:1,height:2})
+}
+
+pub fn infer<B: Backend>(artifact_dir: &str, device: B::Device, item: DiabetesPatient) {
+    let config = TrainingConfig::load(format!("{artifact_dir}/config.json"))
+        .expect("Config should exist for the model");
+    let record = CompactRecorder::new()
+        .load(format!("{artifact_dir}/model").into())
+        .expect("Trained model should exist");
+
+    let model = config.model.init_with::<B>(record).to_device(&device);
+
+    let label = item.height;
+    let batcher = Tester::new(device);
+    let batch = batcher.batch(vec![item]);
+    let output = model.forward(batch.widths);
+    let predicted = output.argmax(1).flatten::<1>(0, 1).into_scalar();
+
+    println!("Predicted {} Expected {}", predicted, label);
 }

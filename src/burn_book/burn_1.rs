@@ -248,6 +248,8 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .save_file(format!("{artifact_dir}/model"), &CompactRecorder::new())
         .expect("Trained model should be saved successfully");
 }
+
+
 pub fn main(){
     let config = ModelConfig::new(10, 1024);
      println!("{}",config);
@@ -259,5 +261,6 @@ pub fn main(){
         TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
         device,
     );
-
+    
 }
+
