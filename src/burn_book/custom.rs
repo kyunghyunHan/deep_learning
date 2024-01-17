@@ -20,12 +20,7 @@ use burn::{
         }
     },
     optim::AdamConfig,
-    data::{
-        dataloader::{
-        DataLoaderBuilder,batcher::Batcher
-        },
- 
-    },
+    data::dataloader::{DataLoaderBuilder,batcher::Batcher},
     record::CompactRecorder,
     backend::{
         Autodiff,
@@ -35,12 +30,12 @@ use burn::{
 };
 use serde::{Deserialize, Serialize};
 use burn::data::dataset::{Dataset, InMemDataset};
-use std::{
-  
-    path::{Path, PathBuf},
-};
+use std::path::Path;
 use burn::tensor::ElementConversion;
 use burn::record::Recorder;
+
+
+/* 데이터 구조체 */
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DiabetesPatient {
     #[serde(rename = "Width")]
@@ -49,13 +44,93 @@ pub struct DiabetesPatient {
     #[serde(rename = "Height")]
 
     pub height:i64
-
 }
-
+/*데이터 셋 구조체 */
 pub struct DiabetesDataset {
     dataset: InMemDataset<DiabetesPatient>,
 }
 
+/*Model
+- 모델설정
+- 기본 컨볼류션 신경망
+- 드롭아웃:훈련성능을 향상시키기 위해
+- linear
+- activarion
+
+*/
+
+
+/*
+
+Tensor<B, 3> // Float tensor (default)
+Tensor<B, 3, Float> // Float tensor (explicit)
+Tensor<B, 3, Int> // Int tensor
+Tensor<B, 3, Bool> // Bool tensor
+
+자세한 타입은 백엔드에서 결정
+
+*/
+#[derive(Module, Debug)]//딥러닝 모듈생성
+pub struct Model<B: Backend> {//BackEnd:새모델이 모든 벡엔드에서 실행할수 있게함
+    // conv1: Conv2d<B>,
+    // conv2: Conv2d<B>,
+    pool: AdaptiveAvgPool2d,
+    dropout: Dropout,
+    linear1: Linear<B>,
+    linear2: Linear<B>,
+    activation: ReLU,
+}
+
+/* Model method */
+impl<B: Backend> Model<B> {
+  
+    pub fn forward(&self, images: Tensor<B, 1>) -> Tensor<B, 2> {
+
+        
+        let [batch_size] = images.dims();
+
+        // Create a channel at the second dimension.
+        let x = images.reshape([batch_size,  1]);
+
+
+        
+        // let x = self.conv1.forward(x); // [batch_size, 8, _, _]
+        let x = self.dropout.forward(x);
+        // let x = self.conv2.forward(x); // [batch_size, 16, _, _]
+        let x = self.dropout.forward(x);
+        let x = self.activation.forward(x);
+        /*채널, */                 
+        // let x = self.pool.forward(x); // [batch_size, 16, 8, 8]
+        let x = x.reshape([batch_size, 1 ]);
+        let x = self.linear1.forward(x);
+        let x = self.dropout.forward(x);
+        let x = self.activation.forward(x);
+   
+        /*1024(16 _ 8 _ 8) */
+        self.linear2.forward(x) // [batch_size, num_classes]
+    }
+
+    pub fn forward_classification(
+        &self,
+        images: Tensor<B,1>,
+        targets: Tensor<B, 1, Int>,
+    ) -> ClassificationOutput<B> {
+        let output = self.forward(images);
+        let loss = CrossEntropyLoss::new(None).forward(output.clone(), targets.clone());
+
+        ClassificationOutput::new(loss, output, targets)
+    }
+
+}
+//network의 기본 구성  
+//구성을 직렬화하여 모델 hyperprameter를 쉽게 저장
+#[derive(Config, Debug)]
+pub struct ModelConfig {
+    num_classes: usize,//
+    hidden_size: usize,//
+    #[config(default = "0.5")]
+    dropout: f64,//dropout
+}
 impl DiabetesDataset {
     pub fn new() -> Result<Self, std::io::Error> {
         // Download dataset csv file
@@ -81,55 +156,8 @@ impl Dataset<DiabetesPatient> for DiabetesDataset {
 }
 
 
-#[derive(Module, Debug)]//딥러닝 모듈생성
-pub struct Model<B: Backend> {//BackEnd:새모델이 모든 벡엔드에서 실행할수 있게함
-    // conv1: Conv2d<B>,
-    // conv2: Conv2d<B>,
-    pool: AdaptiveAvgPool2d,
-    dropout: Dropout,
-    linear1: Linear<B>,
-    linear2: Linear<B>,
-    activation: ReLU,
-}
-//전방향 패스
-impl<B: Backend> Model<B> {
-  
-    pub fn forward(&self, images: Tensor<B, 1>) -> Tensor<B, 2> {
-        let [batch_size] = images.dims();
-
-        // Create a channel at the second dimension.
-        let x = images.reshape([batch_size,  1]);
 
 
-        
-        // let x = self.conv1.forward(x); // [batch_size, 8, _, _]
-        let x = self.dropout.forward(x);
-        // let x = self.conv2.forward(x); // [batch_size, 16, _, _]
-        let x = self.dropout.forward(x);
-        let x = self.activation.forward(x);
-
-        // let x = self.pool.forward(x); // [batch_size, 16, 8, 8]
-        let x = x.reshape([batch_size, 1 ]);
-        let x = self.linear1.forward(x);
-        let x = self.dropout.forward(x);
-        let x = self.activation.forward(x);
-   
-        
-        self.linear2.forward(x) // [batch_size, num_classes]
-    }
-
-    pub fn forward_classification(
-        &self,
-        images: Tensor<B,1>,
-        targets: Tensor<B, 1, Int>,
-    ) -> ClassificationOutput<B> {
-        let output = self.forward(images);
-        let loss = CrossEntropyLoss::new(None).forward(output.clone(), targets.clone());
-
-        ClassificationOutput::new(loss, output, targets)
-    }
-
-}
 
 impl<B: AutodiffBackend> TrainStep<Test<B>, ClassificationOutput<B>> for Model<B> {
     fn step(&self, batch: Test<B>) -> TrainOutput<ClassificationOutput<B>> {
@@ -144,15 +172,7 @@ impl<B: Backend> ValidStep<Test<B>, ClassificationOutput<B>> for Model<B> {
         self.forward_classification(batch.widths, batch.targets)
     }
 }
-//network의 기본 구성 요소
-//구성을 직렬화하여 모델 hyperprameter를 쉽게 저장
-#[derive(Config, Debug)]
-pub struct ModelConfig {
-    num_classes: usize,
-    hidden_size: usize,
-    #[config(default = "0.5")]
-    dropout: f64,
-}
+
 
 impl ModelConfig {
     /// Returns the initialized model.
@@ -289,6 +309,7 @@ pub fn main(){
      type MyBackend = Wgpu<AutoGraphicsApi, f32, i32>;
      type MyAutodiffBackend = Autodiff<MyBackend>;
      let device = burn::backend::wgpu::WgpuDevice::default();
+    //학습
     //  train::<MyAutodiffBackend>(
     //     "./train",
     //     TrainingConfig::new(ModelConfig::new(10, 1), AdamConfig::new()),
@@ -296,7 +317,7 @@ pub fn main(){
     // );
 
 
-    infer::<MyAutodiffBackend >("./train",device,DiabetesPatient{width:1,height:2})
+    infer::<MyAutodiffBackend >("./train",device,DiabetesPatient{width:1,height:1})
 }
 
 pub fn infer<B: Backend>(artifact_dir: &str, device: B::Device, item: DiabetesPatient) {
@@ -312,7 +333,10 @@ pub fn infer<B: Backend>(artifact_dir: &str, device: B::Device, item: DiabetesPa
     let batcher = Tester::new(device);
     let batch = batcher.batch(vec![item]);
     let output = model.forward(batch.widths);
-    let predicted = output.argmax(1).flatten::<1>(0, 1).into_scalar();
 
+    println!("{}",output.to_data());
+    let predicted = output.argmax(1).flatten::<1>(0, 1).into_scalar();
+    //예측값과 실제 레이블값
+    //학습이 이상하게 댐
     println!("Predicted {} Expected {}", predicted, label);
 }
