@@ -22,8 +22,8 @@ fn main(){
     /*===============math================ */
     /*===============burn_book================ */
     //  burn_book::burn_1::main();
-    burn_book::custom::main();
-    // math::math01::main();
+    // burn_book::custom::main();
+    math::math01::main();
     /*===============burn_book================ */
     
 
