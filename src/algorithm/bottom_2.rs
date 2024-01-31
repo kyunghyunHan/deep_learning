@@ -4,7 +4,9 @@ use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
 use mnist::MnistBuilder;
 use std::fs::File;
+use polars::prelude::*;
 use std::io::Read;
+use polars::prelude::*;
 use bincode;
 #[derive(Debug)]
 pub struct Mnist {

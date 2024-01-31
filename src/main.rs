@@ -4,10 +4,11 @@ mod activation_function;
 mod university;
 mod math;
 mod burn_book;
+use rayon::prelude::*;
 fn main(){
     // algorithm::bottom_0::main();
     // algorithm::bottom_1::main();
-    // algorithm::bottom_2::main();
+    algorithm::bottom_2::main();
 
     /*===============fast_depp================ */
     // fast_deep::fast_deep01::main();
@@ -23,8 +24,11 @@ fn main(){
     /*===============burn_book================ */
     //  burn_book::burn_1::main();
     // burn_book::custom::main();
-    math::math01::main();
+    // math::math01::main();
     /*===============burn_book================ */
+
+
     
 
 }
+
