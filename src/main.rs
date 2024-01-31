@@ -5,7 +5,10 @@ mod university;
 mod math;
 mod burn_book;
 use rayon::prelude::*;
+mod boston_price;
 fn main(){
+
+
     // algorithm::bottom_0::main();
     // algorithm::bottom_1::main();
     algorithm::bottom_2::main();
