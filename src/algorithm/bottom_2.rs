@@ -2,7 +2,7 @@ use ndarray::{prelude::*};
 use plotters::prelude::*;
 use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
-use serde_pickle::DeOptions;
+use serde_pickle::{value_to_vec, DeOptions};
 use std::{collections::HashSet, fs::File, iter::Map};
 use polars::prelude::*;
 use std::io::Read;
@@ -12,7 +12,7 @@ use std::io::BufReader;
 use serde_pickle::value::Value;
 use std::error::Error;
 use serde_pickle::HashableValue;
-
+use serde_pickle::SerOptions;
 /*
 신경망
 
@@ -536,7 +536,20 @@ let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("�
 
 // 데이터 역직렬화
 let data:Value=  serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals()).unwrap();
-println!("{:?}", data);
+
+if let Value::Dict(btree_map) = data {
+  // 원하는 키로부터 값을 가져옴
+  if let Some(value) = btree_map.get(&HashableValue::String("b2".to_string())) {
+      println!("Value for key 'b2': {:?}", value_to_vec(value, SerOptions::default()).unwrap()
+    );
+  } else {
+      println!("Key 'b2' not found in the dictionary");
+  }
+} else {
+  println!("Value is not a Dict");
+}
+
+
 // let newwork: Value = serde_pickle::from_slice(&buffer,DeOptions::default()).expect("데이터를 역직렬화할 수 없습니다.");
 
 // 사용 예시
