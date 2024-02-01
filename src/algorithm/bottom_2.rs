@@ -2,71 +2,14 @@ use ndarray::{prelude::*};
 use plotters::prelude::*;
 use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
-use mnist::MnistBuilder;
+use serde_pickle::DeOptions;
 use std::fs::File;
 use polars::prelude::*;
 use std::io::Read;
 use polars::prelude::*;
 use bincode;
-#[derive(Debug)]
-pub struct Mnist {
-    pub train_x: Array2<f64>,
-    pub train_y: Array2<f64>,
-    pub validation_x: Array2<f64>,
-    pub validation_y: Array2<f64>,
-    pub test_x: Array2<f64>,
-    pub test_y: Array2<f64>,
-}
-
-impl Mnist {
-    pub fn new() -> Mnist {
-        let train_size = 60_000;
-        let val_size = 0;
-        let test_size = 10_000;
-
-        // Deconstruct the returned Mnist struct.
-        let mnist = MnistBuilder::new()
-            .base_path("dataset")
-            .label_format_one_hot()
-            .training_set_length(train_size)
-            .validation_set_length(val_size)
-            .test_set_length(test_size)
-            .finalize();
-
-        fn convert(data: &Vec<u8>, width: usize, height: usize) -> Array2<f64> {
-            Array::from_shape_fn((width, height), |(i, j)| data[i * height + j] as f64 / 255.0)
-        }
-
-        Mnist {
-            train_x: convert(&mnist.trn_img, train_size as usize, 784) / 255.0,
-            train_y: convert(&mnist.trn_lbl, train_size as usize, 10),
-            validation_x: convert(&mnist.val_img, val_size as usize, 784) / 255.0,
-            validation_y: convert(&mnist.val_lbl, val_size as usize, 10),
-            test_x: convert(&mnist.tst_img, test_size as usize, 784) / 255.0,
-            test_y: convert(&mnist.tst_lbl, test_size as usize, 10),
-        }
-    }
-
-    fn get_batch(x: &Array2<f64>, y: &Array2<f64>, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
-        let end = (offset + batch_size).min(y.shape()[0]);
-        let batch_x = x.slice(s![offset..end, ..]);
-        let batch_y = y.slice(s![offset..end, ..]);
-
-        (batch_x.to_owned(), batch_y.to_owned())
-    }
-
-    pub fn get_train_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
-        Mnist::get_batch(&self.train_x, &self.train_y, offset, batch_size)
-    }
-
-    pub fn get_validation_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
-        Mnist::get_batch(&self.validation_x, &self.validation_y, offset, batch_size)
-    }
-
-    pub fn get_test_batch(&self, offset: usize, batch_size: usize) -> (Array2<f64>, Array2<f64>) {
-        Mnist::get_batch(&self.test_x, &self.test_y, offset, batch_size)
-    }
-}
+use std::io::BufReader;
+use serde_pickle::value::Value;
 
 /*
 신경망
@@ -307,9 +250,41 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 
 
 
+struct Mnist{
+    x_train:Vec<Vec<i64>>,
+    y_train:Vec<i64>,
+    x_test:Vec<Vec<i64>>,
+    y_test:Vec<i64>
+}
 
+impl Mnist{
+    fn new()->Self{
+        let train_df= CsvReader::from_path("./dataset/digit-recognizer/train.csv").unwrap().finish().unwrap();
+        let test_df= CsvReader::from_path("./dataset/digit-recognizer/test.csv").unwrap().finish().unwrap();
+        let submission = CsvReader::from_path("./dataset/digit-recognizer/sample_submission.csv").unwrap().finish().unwrap();
+        let y_train=  train_df.column("label").unwrap().i64().unwrap().into_no_null_iter().collect::<Vec<i64>>();
+        let x_train_data= train_df.drop("label").unwrap().to_ndarray::<Int64Type>(IndexOrder::Fortran).unwrap();
+        let mut x_train: Vec<Vec<_>>=Vec::new();
+        for row in x_train_data.outer_iter(){
+            let row_vec = row.iter().cloned().collect();
+            x_train.push(row_vec);
+        }
+        let x_test_data= test_df.to_ndarray::<Int64Type>(IndexOrder::Fortran).unwrap();
+        let mut x_test: Vec<Vec<_>>=Vec::new();
+        for row in x_test_data.outer_iter(){
+            let row_vec = row.iter().cloned().collect();
+            x_test.push(row_vec);
+        }
+        let y_test=  submission.column("Label").unwrap().i64().unwrap().into_no_null_iter().collect::<Vec<i64>>();
 
-
+        Mnist{
+            x_train,
+            y_train,
+            x_test,
+            y_test
+        }
+    }
+}
 
 
 
@@ -520,17 +495,22 @@ println!("{}",y);
 println!("{}",y.sum());
 
 let mnist = Mnist::new();
-let x_train= mnist.train_x;
-let t_train= mnist.train_y;
-let x_test= mnist.test_x;
-let y_test= mnist.test_y;
+let x_train= mnist.x_train;
+let t_train= mnist.y_train;
+let x_test= mnist.x_test;
+let y_test= mnist.y_test;
 
 
-println!("{:?}",x_train.shape());
-println!("{:?}",t_train.shape());
+println!("{:?}",x_train);
+let file = File::open("./dataset/digit-recognizer/array.pickle").unwrap();
+let reader = BufReader::new(file);
+let data: Value = serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
+println!("{}",data);
+// println!("{:?}",x_train.shape());
+// println!("{:?}",t_train.shape());
 
-println!("{:?}",x_test.shape());
-println!("{:?}",y_test.shape());
+// println!("{:?}",x_test.shape());
+// println!("{:?}",y_test.shape());
 
 }
 //시그모이드 
