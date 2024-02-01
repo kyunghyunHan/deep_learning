@@ -528,14 +528,14 @@ println!("{}",y.sum());
 // println!("{}",data);
 
 let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("파일을 열 수 없습니다.");
-let reader = BufReader::new(file);
+// let reader = BufReader::new(file);
 
 // 파일에서 데이터 읽기
 // let mut buffer = Vec::new();
 // reader.read_to_end(&mut buffer).expect("파일을 읽을 수 없습니다.");
 
 // 데이터 역직렬화
-let data:Value=  serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
+let data:Value=  serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals()).unwrap();
 println!("{:?}", data);
 // let newwork: Value = serde_pickle::from_slice(&buffer,DeOptions::default()).expect("데이터를 역직렬화할 수 없습니다.");
 
