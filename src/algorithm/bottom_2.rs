@@ -3,13 +3,15 @@ use plotters::prelude::*;
 use ndarray_stats::QuantileExt;
 use ndarray::prelude::*;
 use serde_pickle::DeOptions;
-use std::fs::File;
+use std::{collections::HashSet, fs::File, iter::Map};
 use polars::prelude::*;
 use std::io::Read;
 use polars::prelude::*;
 use bincode;
 use std::io::BufReader;
 use serde_pickle::value::Value;
+use std::error::Error;
+use serde_pickle::HashableValue;
 
 /*
 신경망
@@ -248,7 +250,26 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 */
 
 
-
+// const w1:[f64;100]=[-0.01471108, -0.07215131, -0.00155692,  0.12199665,  0.11603302,
+// -0.00754946,  0.04085451, -0.08496164,  0.02898045,  0.0199724 ,
+//  0.19770803,  0.04365116, -0.06518728, -0.05226324,  0.0113163 ,
+//  0.03049979,  0.04060355,  0.0695399 , -0.07778469,  0.0692313 ,
+// -0.09365533,  0.0548001 , -0.03843745,  0.02123107,  0.03793406,
+// -0.02806267, -0.01818407,  0.06870425,  0.0542943 ,  0.0674368 ,
+//  0.06264312, -0.0233236 , -0.01589135,  0.01860516,  0.01839287,
+// -0.01568104, -0.07422207, -0.01606729, -0.02262172, -0.01007509,
+//  0.0434415 , -0.12020151,  0.02802471, -0.07591944, -0.00533499,
+// -0.08935217, -0.0181419 ,  0.0330689 , -0.01812706, -0.07689384,
+// -0.02715412, -0.03847084, -0.05315471, -0.02153288,  0.06898243,
+//  0.02431128, -0.00333816,  0.00817491,  0.03911701, -0.02924617,
+//  0.07184725, -0.00356748,  0.02246175,  0.03987982, -0.04921926,
+//  0.02454282,  0.05875788,  0.08505439, -0.00190306, -0.03044275,
+// -0.06383366,  0.0470311 , -0.12005549,  0.03573952, -0.04293387,
+//  0.03283867, -0.03347731, -0.13659105, -0.00123189,  0.00096832,
+//  0.04590394, -0.02517798, -0.02073979,  0.02005584,  0.010629  ,
+//  0.01902938, -0.01046924,  0.05777885,  0.04737163, -0.04362756,
+//  0.07450858,  0.05077952,  0.06648835,  0.04064002, -0.00265163,
+//  0.00576806, -0.09652461, -0.05131314,  0.02199687, -0.04358608];
 
 struct Mnist{
     x_train:Vec<Vec<i64>>,
@@ -494,18 +515,42 @@ let y =softmax(&a);
 println!("{}",y);
 println!("{}",y.sum());
 
-let mnist = Mnist::new();
-let x_train= mnist.x_train;
-let t_train= mnist.y_train;
-let x_test= mnist.x_test;
-let y_test= mnist.y_test;
+// let mnist = Mnist::new();
+// let x_train= mnist.x_train;
+// let t_train= mnist.y_train;
+// let x_test= mnist.x_test;
+// let y_test= mnist.y_test;
 
 
-println!("{:?}",x_train);
-let file = File::open("./dataset/digit-recognizer/array.pickle").unwrap();
+// println!("{:?}",x_train);
+// let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").unwrap();
+// let data: Value = serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
+// println!("{}",data);
+
+let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("파일을 열 수 없습니다.");
 let reader = BufReader::new(file);
-let data: Value = serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
-println!("{}",data);
+
+// 파일에서 데이터 읽기
+// let mut buffer = Vec::new();
+// reader.read_to_end(&mut buffer).expect("파일을 읽을 수 없습니다.");
+
+// 데이터 역직렬화
+let data:Value=  serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
+println!("{:?}", data);
+// let newwork: Value = serde_pickle::from_slice(&buffer,DeOptions::default()).expect("데이터를 역직렬화할 수 없습니다.");
+
+// 사용 예시
+// if let Value::Dict(dict) = newwork {
+//     if let Some(w1) = dict.get(b"W1") {
+//         println!("{:?}", w1);
+//     } else {
+//         println!("W1 키를 찾을 수 없습니다.");
+//     }
+// } else {
+//     println!("딕셔너리가 아닌 데이터입니다.");
+// }
+// 사용 예시
+// println!("{:?}", newwork.W1);
 // println!("{:?}",x_train.shape());
 // println!("{:?}",t_train.shape());
 
