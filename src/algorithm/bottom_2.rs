@@ -1,18 +1,18 @@
-use ndarray::{prelude::*};
-use plotters::prelude::*;
-use ndarray_stats::QuantileExt;
-use ndarray::prelude::*;
-use serde_pickle::{value_to_vec, DeOptions};
-use std::{collections::HashSet, fs::File, iter::Map};
-use polars::prelude::*;
-use std::io::Read;
-use polars::prelude::*;
 use bincode;
-use std::io::BufReader;
+use ndarray::prelude::*;
+use ndarray::prelude::*;
+use ndarray_stats::QuantileExt;
+use plotters::prelude::*;
+use polars::prelude::*;
+use polars::prelude::*;
 use serde_pickle::value::Value;
-use std::error::Error;
 use serde_pickle::HashableValue;
 use serde_pickle::SerOptions;
+use serde_pickle::{value_to_vec, DeOptions};
+use std::error::Error;
+use std::io::BufReader;
+use std::io::Read;
+use std::{collections::HashSet, fs::File, iter::Map};
 /*
 신경망
 
@@ -85,7 +85,7 @@ def step_function(x):
     return y.astyoe(np.int)
 으로 사용이 가능합니다
 */
-/*계단함수의 그래프 
+/*계단함수의 그래프
 
 plotters 라이브러리를 사용합니다
 np.arange(-5.0,5.0,0.1)은 -5.05에서 5.0전까지 0.1간격의 배열을 생성합니다.
@@ -96,7 +96,7 @@ step_function()인수로 받은 배열의 원소를 각각을 인수로 계단 �
 계단 함수는 0을 경계로 출력이 0에서 1로 바뀝니다.
 
 */
-/*시그모이드 함수 구현 
+/*시그모이드 함수 구현
 시그모이드는 다음과 같습니다.
 
 np.exp(-1)은 exp(-x)수식에 해당합니다.
@@ -110,7 +110,7 @@ np.exp(-1)은 exp(-x)수식에 해당합니다.
 /*비선형 함슈 */
 /*ReLU함수 */
 /*다차원 배열의 계산 */
-/*행렬의 곱 
+/*행렬의 곱
 2X2행렬의 곱은 다음과 같이 계산합니다.
 위 식을 구현하면 다음과 같이 됩니다.
 /
@@ -137,7 +137,7 @@ A가 2차원 이고 B가 1차원이여도 대응하는 차원의원소수를 일
 구현하면 다음과 같습니다.
 */
 /*
-신경망 에서의 행렬 곱 
+신경망 에서의 행렬 곱
 이 구현에서도 X,W,Y의 형상을 주의합니다.특히 X와 W의 대응하는 차원의 원소수가 같아야한다는점을 주의해야합니다.
 
 다차원 배열의 스칼라 곱을 구해주는 dot()함수를 사용하면 y를 계산할수 있습니다.
@@ -145,7 +145,7 @@ A가 2차원 이고 B가 1차원이여도 대응하는 차원의원소수를 일
 
 
 */
-/*3층 신경망 구현 
+/*3층 신경망 구현
 
 신경망을 입력부터 출력까지의 처리(순방향 처리)를 구현하려면 다차원배열을 사용해야 합니다.
 *3층 신경망.입력충(0층)은 2개,첫번째 은닉충(1층)은 3개 두번쨰 은닉충은(2층)은 2개 출력층(3층)은 2개의 뉴런으로 구성됩니다.
@@ -249,7 +249,6 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 
 */
 
-
 // const w1:[f64;100]=[-0.01471108, -0.07215131, -0.00155692,  0.12199665,  0.11603302,
 // -0.00754946,  0.04085451, -0.08496164,  0.02898045,  0.0199724 ,
 //  0.19770803,  0.04365116, -0.06518728, -0.05226324,  0.0113163 ,
@@ -271,54 +270,78 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 //  0.07450858,  0.05077952,  0.06648835,  0.04064002, -0.00265163,
 //  0.00576806, -0.09652461, -0.05131314,  0.02199687, -0.04358608];
 
-struct Mnist{
-    x_train:Vec<Vec<i64>>,
-    y_train:Vec<i64>,
-    x_test:Vec<Vec<i64>>,
-    y_test:Vec<i64>
+struct Mnist {
+    x_train: Vec<Vec<i64>>,
+    y_train: Vec<i64>,
+    x_test: Vec<Vec<i64>>,
+    y_test: Vec<i64>,
 }
 
-impl Mnist{
-    fn new()->Self{
-        let train_df= CsvReader::from_path("./dataset/digit-recognizer/train.csv").unwrap().finish().unwrap();
-        let test_df= CsvReader::from_path("./dataset/digit-recognizer/test.csv").unwrap().finish().unwrap();
-        let submission = CsvReader::from_path("./dataset/digit-recognizer/sample_submission.csv").unwrap().finish().unwrap();
-        let y_train=  train_df.column("label").unwrap().i64().unwrap().into_no_null_iter().collect::<Vec<i64>>();
-        let x_train_data= train_df.drop("label").unwrap().to_ndarray::<Int64Type>(IndexOrder::Fortran).unwrap();
-        let mut x_train: Vec<Vec<_>>=Vec::new();
-        for row in x_train_data.outer_iter(){
+impl Mnist {
+    fn new() -> Self {
+        let train_df = CsvReader::from_path("./dataset/digit-recognizer/train.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let test_df = CsvReader::from_path("./dataset/digit-recognizer/test.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let submission = CsvReader::from_path("./dataset/digit-recognizer/sample_submission.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let y_train = train_df
+            .column("label")
+            .unwrap()
+            .i64()
+            .unwrap()
+            .into_no_null_iter()
+            .collect::<Vec<i64>>();
+        let x_train_data = train_df
+            .drop("label")
+            .unwrap()
+            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
+            .unwrap();
+        let mut x_train: Vec<Vec<_>> = Vec::new();
+        for row in x_train_data.outer_iter() {
             let row_vec = row.iter().cloned().collect();
             x_train.push(row_vec);
         }
-        let x_test_data= test_df.to_ndarray::<Int64Type>(IndexOrder::Fortran).unwrap();
-        let mut x_test: Vec<Vec<_>>=Vec::new();
-        for row in x_test_data.outer_iter(){
+        let x_test_data = test_df
+            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
+            .unwrap();
+        let mut x_test: Vec<Vec<_>> = Vec::new();
+        for row in x_test_data.outer_iter() {
             let row_vec = row.iter().cloned().collect();
             x_test.push(row_vec);
         }
-        let y_test=  submission.column("Label").unwrap().i64().unwrap().into_no_null_iter().collect::<Vec<i64>>();
+        let y_test = submission
+            .column("Label")
+            .unwrap()
+            .i64()
+            .unwrap()
+            .into_no_null_iter()
+            .collect::<Vec<i64>>();
 
-        Mnist{
+        Mnist {
             x_train,
             y_train,
             x_test,
-            y_test
+            y_test,
         }
     }
 }
 
-
-
-fn step_function(x:i32)->i32{
-  if x>0{
-    return 1
-
-  }else {
-    return 0
-  }
+fn step_function(x: i32) -> i32 {
+    if x > 0 {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 fn stet_function(x: &Array1<f64>) -> Array1<f64> {
-    x.map(|&val| if val > 0.0{ 1.0 } else { 0.0 })
+    x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
 }
 
 /*
@@ -327,300 +350,363 @@ def stet_function(x):
     return y.astype(np.int)
 
 */
-pub fn main(){
-let x= arr1(&[-5.0,5.0,0.1]);
-let y = stet_function(&x);
-/*계단함수 구현 */
-let  x = Array::range(-5.0, 5., 0.1);
-let y= stet_function(&x);
 
-      // 그래프 그리기
-      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("step_function.png", (800, 600)).into_drawing_area();
-      root.fill(&WHITE).unwrap();
-     //x축 -6.0 부터 6까지
-     //y축 -0.1부터 1.1까지
-      let mut chart = ChartBuilder::on(&root)
-          .caption("step_function", ("sans-serif", 50))
-          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-          .unwrap();
-  
-      chart.configure_mesh().draw().unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
-     
-/*시그모이드 함수 구현*/
-let  x = Array1::from(vec![-1.0, 1.0, 2.0]);
-println!("{}",sigmoid(&x));
+/*========Main======== */
+pub fn main() {
+    let x = arr1(&[-5.0, 5.0, 0.1]);
+    let y = stet_function(&x);
+    /*계단함수 구현 */
+    let x = Array::range(-5.0, 5., 0.1);
+    let y = stet_function(&x);
 
-let t= arr1(&[1.0,2.0,3.0]);
-println!("{}",1.0+&t);
+    // 그래프 그리기
+    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
+        BitMapBackend::new("step_function.png", (800, 600)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+    //x축 -6.0 부터 6까지
+    //y축 -0.1부터 1.1까지
+    let mut chart = ChartBuilder::on(&root)
+        .caption("step_function", ("sans-serif", 50))
+        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+        .unwrap();
 
-println!("{}",1.0/&t);
+    chart.configure_mesh().draw().unwrap();
+    chart
+        .draw_series(LineSeries::new(
+            x.iter().cloned().zip(y.iter().cloned()),
+            &BLUE,
+        ))
+        .unwrap();
 
+    /*시그모이드 함수 구현*/
+    let x = Array1::from(vec![-1.0, 1.0, 2.0]);
+    println!("{}", sigmoid(&x));
 
-let  x = Array::range(-5.0, 5., 0.1);
-let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= sigmoid(&x);
+    let t = arr1(&[1.0, 2.0, 3.0]);
+    println!("{}", 1.0 + &t);
 
-      // 그래프 그리기
-      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
-      root.fill(&WHITE).unwrap();
-     //x축 -6.0 부터 6까지
-     //y축 -0.1부터 1.1까지
-      let mut chart = ChartBuilder::on(&root)
-          .caption("sigmoid", ("sans-serif", 50))
-          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-          .unwrap();
-  
-      chart.configure_mesh().draw().unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
+    println!("{}", 1.0 / &t);
 
+    let x = Array::range(-5.0, 5., 0.1);
+    let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = sigmoid(&x);
 
-/*계단 함수와 비교 */
+    // 그래프 그리기
+    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
+        BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+    //x축 -6.0 부터 6까지
+    //y축 -0.1부터 1.1까지
+    let mut chart = ChartBuilder::on(&root)
+        .caption("sigmoid", ("sans-serif", 50))
+        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+        .unwrap();
 
-let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= stet_function(&x);
+    chart.configure_mesh().draw().unwrap();
+    chart
+        .draw_series(LineSeries::new(
+            x.iter().cloned().zip(y.iter().cloned()),
+            &BLUE,
+        ))
+        .unwrap();
+    chart
+        .draw_series(LineSeries::new(
+            x.iter().cloned().zip(y.iter().cloned()),
+            &BLUE,
+        ))
+        .unwrap();
 
-      // 그래프 그리기
-      let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> = BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
-      root.fill(&WHITE).unwrap();
-     //x축 -6.0 부터 6까지
-     //y축 -0.1부터 1.1까지
-      let mut chart = ChartBuilder::on(&root)
-          .caption("sigmoid", ("sans-serif", 50))
-          .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-          .unwrap();
-  
-      chart.configure_mesh().draw().unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE)).unwrap();
-      chart.draw_series(LineSeries::new(x.iter().cloned().zip(y2.iter().cloned()), &RED)).unwrap();
+    /*계단 함수와 비교 */
 
-/*다차원 배열 */
-let a= arr1(&[1,2,3,4]);
-print!("{}",a);
+    let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = stet_function(&x);
 
-//차원의 수 확인
-a.ndim();
-//형상:원소 개로 구성
-a.shape();
+    // 그래프 그리기
+    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
+        BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+    //x축 -6.0 부터 6까지
+    //y축 -0.1부터 1.1까지
+    let mut chart = ChartBuilder::on(&root)
+        .caption("sigmoid", ("sans-serif", 50))
+        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
+        .unwrap();
 
-let b= arr2(&[[1,2],[3,4],[5,6]]);
-println!("{}",b);
-b.ndim();
-b.shape();
+    chart.configure_mesh().draw().unwrap();
+    chart
+        .draw_series(LineSeries::new(
+            x.iter().cloned().zip(y.iter().cloned()),
+            &BLUE,
+        ))
+        .unwrap();
+    chart
+        .draw_series(LineSeries::new(
+            x.iter().cloned().zip(y2.iter().cloned()),
+            &RED,
+        ))
+        .unwrap();
 
+    /*다차원 배열 */
+    let a = arr1(&[1, 2, 3, 4]);
+    print!("{}", a);
 
-/*행렬의 곱*/
-let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>>= arr2(&[[1,2],[3,4]]);
-println!("{:?}",a.shape());
+    //차원의 수 확인
+    a.ndim();
+    //형상:원소 개로 구성
+    a.shape();
 
-let b= arr2(&[[5,6],[7,8]]);
-println!("{:?}",b.shape());
+    let b = arr2(&[[1, 2], [3, 4], [5, 6]]);
+    println!("{}", b);
+    b.ndim();
+    b.shape();
 
-println!("{}",a.dot(&b));
+    /*행렬의 곱*/
+    let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2], [3, 4]]);
+    println!("{:?}", a.shape());
 
-let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>>= arr2(&[[1,2,3],[4,5,6]]);
-println!("{:?}",a.shape());
+    let b = arr2(&[[5, 6], [7, 8]]);
+    println!("{:?}", b.shape());
 
-let b: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>>= arr2(&[[1,2],[3,4],[5,6]]);
-println!("{:?}",b.shape());
+    println!("{}", a.dot(&b));
 
-println!("{}",a.dot(&b));
+    let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2, 3], [4, 5, 6]]);
+    println!("{:?}", a.shape());
 
+    let b: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2], [3, 4], [5, 6]]);
+    println!("{:?}", b.shape());
 
+    println!("{}", a.dot(&b));
 
-let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>>= arr2(&[[1,2,3],[4,5,6]]);
-println!("{:?}",a.shape());
+    let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2, 3], [4, 5, 6]]);
+    println!("{:?}", a.shape());
 
-let c= arr1(&[[1,2],[3,4]]);
-println!("{:?}",c.shape());
-// println!("{}",a.dot(&c));//error
+    let c = arr1(&[[1, 2], [3, 4]]);
+    println!("{:?}", c.shape());
+    // println!("{}",a.dot(&c));//error
 
-let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1,2],[3,4],[5,6]]);
-println!("{:?}",a.shape());
+    let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2], [3, 4], [5, 6]]);
+    println!("{:?}", a.shape());
 
-let b = arr1(&[7,8]);
-println!("{:?}",b.shape());
-println!("{}",a.dot(&b));
+    let b = arr1(&[7, 8]);
+    println!("{:?}", b.shape());
+    println!("{}", a.dot(&b));
 
+    /*신경망 행렬곱 */
+    let x = arr1(&[1, 2]);
+    println!("{:?}", x.shape());
 
-/*신경망 행렬곱 */
-let x= arr1(&[1,2]);
-println!("{:?}",x.shape());
+    let w = arr2(&[[1, 3, 5], [2, 4, 6]]);
+    println!("{:?}", w.shape());
+    println!("{}", w);
 
-let w= arr2(&[[1,3,5],[2,4,6]]);
-println!("{:?}",w.shape());
-println!("{}",w);
+    let y = x.dot(&w);
+    println!("{}", y);
+    /*신경망 구현 */
+    let x = arr1(&[1.0, 0.5]);
+    let w1 = arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]);
+    let b1: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = arr1(&[0.1, 0.2, 0.3]);
 
-let y =x.dot(&w);
-println!("{}",y);
-/*신경망 구현 */
-let x = arr1(&[1.0,0.5]);
-let w1= arr2(&[[0.1,0.3,0.5],[0.2,0.4,0.6]]);
-let b1: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = arr1(&[0.1,0.2,0.3]);
+    println!("{:?}", w1.shape());
+    println!("{:?}", x.shape());
+    println!("{:?}", b1.shape());
 
-println!("{:?}",w1.shape());
-println!("{:?}",x.shape());
-println!("{:?}",b1.shape());
+    let a1 = x.dot(&w1) + b1;
+    println!("{:?}", a1.shape());
 
-let a1 = x.dot(&w1)+b1;
-println!("{:?}",a1.shape());
+    let z1 = sigmoid(&a1);
+    println!("{}", a1);
+    println!("{}", z1);
 
+    let w2 = arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]);
+    let b2 = arr1(&[0.1, 0.2]);
 
-let z1= sigmoid(&a1);
-println!("{}",a1);
-println!("{}",z1);
+    println!("{:?}", z1.shape());
+    println!("{:?}", w2.shape());
+    println!("{:?}", b2.shape());
 
-let w2= arr2(&[[0.1,0.4],[0.2,0.5],[0.3,0.6]]);
-let b2= arr1(&[0.1,0.2]);
+    let a2 = z1.dot(&w2) + b2;
+    let z2 = sigmoid(&a2);
 
-println!("{:?}",z1.shape());
-println!("{:?}",w2.shape());
-println!("{:?}",b2.shape());
+    let w3 = arr2(&[[0.1, 0.3], [0.2, 0.4]]);
+    let b3 = arr1(&[0.1, 0.2]);
 
-let a2= z1.dot(&w2)+b2;
-let z2 = sigmoid(&a2);
+    let a3 = z2.dot(&w3) + b3;
 
-let w3= arr2(&[[0.1,0.3],[0.2,0.4]]);
-let b3= arr1(&[0.1,0.2]);
+    let y = idenity_function(&x);
 
-let a3= z2.dot(&w3)+b3;
+    /*항등함수와 소프트맥스 함수 구현 */
+    let a = arr1(&[0.3, 2.9, 4.0]);
+    let exp_a = &a.map(|val: &f64| f64::exp(*val));
+    println!("{}", exp_a);
+    let sum_exp_a = exp_a.sum();
+    println!("{}", sum_exp_a);
 
-let y= idenity_function(&x);
+    let y = exp_a / sum_exp_a;
+    println!("{}", &y);
 
-/*항등함수와 소프트맥스 함수 구현 */
-let a = arr1(&[0.3,2.9,4.0]);
-let exp_a=   &a.map(|val: &f64|  f64::exp(*val));
-println!("{}",exp_a);
-let sum_exp_a =exp_a.sum();
-println!("{}",sum_exp_a);
+    //소프트맥스
+    let a = arr1(&[1010.0, 1000.0, 990.0]);
+    let exp_a = a.mapv(|x| f64::exp(x));
+    let exp_a_sum = exp_a.sum();
+    println!("{}", exp_a / exp_a_sum); //Nan,Nan,Nan
 
-let y= exp_a/sum_exp_a;
-println!("{}",&y);
+    let c: f64 = a[a.argmax().unwrap()];
+    println!("{}", &a - c);
 
+    println!(
+        "{}",
+        (&a - c).mapv(|x| f64::exp(x)) / (&a - c).mapv(|x| f64::exp(x)).sum()
+    );
 
-//소프트맥스
-let a= arr1(&[1010.0,1000.0,990.0]);
-let exp_a = a.mapv(|x |f64::exp(x));
-let exp_a_sum= exp_a.sum();
-println!("{}",exp_a/exp_a_sum);//Nan,Nan,Nan
+    let a = arr1(&[0.3, 2.9, 4.0]);
+    let y = softmax(&a);
+    println!("{}", y);
+    println!("{}", y.sum());
 
+    let file =
+        File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("파일을 열 수 없습니다.");
+    // 파일에서 데이터 읽기
+    // 데이터 역직렬화
+    let data: Value =
+        serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals())
+            .unwrap();
 
-let c: f64 =a[a.argmax().unwrap()];
-println!("{}",&a-c);
-
-
-println!("{}",(&a-c).mapv(|x |f64::exp(x))/(&a-c).mapv(|x |f64::exp(x)).sum());
-
-let a=arr1(&[0.3,2.9,4.0]);
-let y =softmax(&a);
-println!("{}",y);
-println!("{}",y.sum());
-
-// let mnist = Mnist::new();
-// let x_train= mnist.x_train;
-// let t_train= mnist.y_train;
-// let x_test= mnist.x_test;
-// let y_test= mnist.y_test;
-
-
-// println!("{:?}",x_train);
-// let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").unwrap();
-// let data: Value = serde_pickle::from_reader(reader, DeOptions::default()).unwrap();
-// println!("{}",data);
-
-let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("파일을 열 수 없습니다.");
-// let reader = BufReader::new(file);
-
-// 파일에서 데이터 읽기
-// let mut buffer = Vec::new();
-// reader.read_to_end(&mut buffer).expect("파일을 읽을 수 없습니다.");
-
-// 데이터 역직렬화
-let data:Value=  serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals()).unwrap();
-
-let b2: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  if let Some(value) = btree_map.get(&HashableValue::String("b2".to_string())) {
-      value_to_vec(value, SerOptions::default()).unwrap().iter().map(|x|x.as_f64()).collect::<Vec<f64>>()
+    // let b1: Vec<f64> = if let Value::Dict(btree_map) = &data {
+    //     if let Some(value) = btree_map.get(&HashableValue) {
+    //         value_to_vec(value, SerOptions::default())
+    //             .unwrap()
+    //             .iter()
+    //             .map(|x| x.as_f64())
+    //             .collect::<Vec<f64>>()
+    //     } else {
+    //         Vec::new()
+    //     }
+    // } else {
+    //     Vec::new()
+    // };
+    println!("{:?}",data);
+  //   let b2: Vec<f64> = if let Value::Dict(btree_map) = &data {
+  //       if let Some(value) = btree_map.get(&HashableValue::String("b2".to_string())) {
+  //           value_to_vec(value, SerOptions::default())
+  //               .unwrap()
+  //               .iter()
+  //               .map(|x| x.as_f64())
+  //               .collect::<Vec<f64>>()
+  //       } else {
+  //           Vec::new()
+  //       }
+  //   } else {
+  //       Vec::new()
+  //   };
+    let b3: Vec<f32> = if let Value::Dict(btree_map) = &data {
+      if let Some(value) = btree_map.get(&HashableValue::String("b3".to_string())) {
+          value_to_vec(value, SerOptions::default())
+              .unwrap()
+              .iter()
+              .map(|x|* x as f32)
+              .collect::<Vec<f32>>()
+      } else {
+          Vec::new()
+      }
   } else {
       Vec::new()
-  }
-} else {
-  Vec::new()
-};
-let b1: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  if let Some(value) = btree_map.get(&HashableValue::String("b1".to_string())) {
-      value_to_vec(value, SerOptions::default()).unwrap().iter().map(|x|x.as_f64()).collect::<Vec<f64>>()
-  } else {
-      Vec::new()
-  }
-} else {
-  Vec::new()
-};
-println!("{:?}",b1);
-println!("{:?}",b2);
-// let newwork: Value = serde_pickle::from_slice(&buffer,DeOptions::default()).expect("데이터를 역직렬화할 수 없습니다.");
-
-// 사용 예시
-// if let Value::Dict(dict) = newwork {
-//     if let Some(w1) = dict.get(b"W1") {
-//         println!("{:?}", w1);
-//     } else {
-//         println!("W1 키를 찾을 수 없습니다.");
-//     }
-// } else {
-//     println!("딕셔너리가 아닌 데이터입니다.");
-// }
-// 사용 예시
-// println!("{:?}", newwork.W1);
-// println!("{:?}",x_train.shape());
-// println!("{:?}",t_train.shape());
-
-// println!("{:?}",x_test.shape());
-// println!("{:?}",y_test.shape());
+  };
+  println!("{:?}",b3);
+  //   let  w1: Vec<f64> = if let Value::Dict(btree_map) = &data {
+  //       if let Some(value) = btree_map.get(&HashableValue::String("W1".to_string())) {
+  //           value_to_vec(value, SerOptions::default())
+  //               .unwrap()
+  //               .iter()
+  //               .map(|x| x.as_f64())
+  //               .collect::<Vec<f64>>()
+  //       } else {
+  //           Vec::new()
+  //       }
+  //   } else {
+  //       Vec::new()
+  //   };
+  //   let w2: Vec<f64> = if let Value::Dict(btree_map) = &data {
+  //       if let Some(value) = btree_map.get(&HashableValue::String("W2".to_string())) {
+  //           value_to_vec(value, SerOptions::default())
+  //               .unwrap()
+  //               .iter()
+  //               .map(|x| x.as_f64())
+  //               .collect::<Vec<f64>>()
+  //       } else {
+  //           Vec::new()
+  //       }
+  //   } else {
+  //       Vec::new()
+  //   };
+  //   let w3: Vec<f64> = if let Value::Dict(btree_map) = &data {
+  //     if let Some(value) = btree_map.get(&HashableValue::String("W3".to_string())) {
+  //         value_to_vec(value, SerOptions::default())
+  //             .unwrap()
+  //             .iter()
+  //             .map(|x| x.as_f64())
+  //             .collect::<Vec<f64>>()
+  //     } else {
+  //         Vec::new()
+  //     }
+  // } else {
+  //     Vec::new()
+  // };
+ 
+   
+    
 
 }
-//시그모이드 
-
-
+//시그모이드
 fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
-  x.map(|val: &f64| 1.0 / (1.0 + f64::exp(-val)))
+    x.map(|val: &f64| 1.0 / (1.0 + f64::exp(-val)))
 }
 
 /*ReLU */
 
 fn relu(x: &Array1<f64>) -> Array1<f64> {
-  x.mapv(|element| if element > 0.0 { element } else { 0.0 })
+    x.mapv(|element| if element > 0.0 { element } else { 0.0 })
 }
 
 /*항동함수 */
 
 fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
-  return x.clone()
+    return x.clone();
 }
-struct Network{
-
+struct Network {
+    w1: Array2<f64>,
+    w2: Array2<f64>,
+    w3: Array2<f64>,
+    b1: Vec<f64>,
+    b2: Vec<f64>,
+    b3: Vec<f64>,
 }
-// fn init_network() -> Network {
-//     let mut file = File::open("sample_weight.pkl").expect("Unable to open file");
-//     let mut buffer = Vec::new();
+impl Network {
+    pub fn predict(self,x:Array1<f64>)->Array1<f64> {
+      println!("{}",1);
+        let (w1, w2, w3) = (self.w1,self.w2,self.w3);
+        println!("{}",2);
 
-//     file.read_to_end(&mut buffer).expect("Unable to read file");
+        let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2),arr1(&self.b3));
+        println!("{}",3);
+        println!("{:?}",x.shape());
+        println!("{:?}",w1.shape());
+        println!("{:?}",b1.shape());
 
-//     // Deserialize the data using bincode
-//     let network: Network = bincode::deserialize(&buffer).expect("Unable to deserialize data");
 
-//     network
-// }
+        let a1= x.dot(&w1)+&b1;
+        println!("{}",4);
 
-fn forward(){
-  
+        let z1= sigmoid(&a1);
+        let a2= z1.dot(&w2)+&b2;
+        let z2= sigmoid(&a2);
+        let a3= z2.dot(&w3)+&b3;
+        let y= softmax(&a3);
+        y
+    }
 }
-fn predict(){}
-fn softmax(a:&Array1<f64>)->Array1<f64>{
-  let c: f64 =a[a.argmax().unwrap()];
-  let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
-  let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
-  exp_a / sum_exp_a
+
+fn forward() {}
+fn softmax(a: &Array1<f64>) -> Array1<f64> {
+    let c: f64 = a[a.argmax().unwrap()];
+    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
+    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
+    exp_a / sum_exp_a
 }
-
-
-
