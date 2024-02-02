@@ -537,19 +537,26 @@ let file = File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("�
 // 데이터 역직렬화
 let data:Value=  serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals()).unwrap();
 
-if let Value::Dict(btree_map) = data {
-  // 원하는 키로부터 값을 가져옴
+let b2: Vec<f64> = if let Value::Dict(btree_map) = &data {
   if let Some(value) = btree_map.get(&HashableValue::String("b2".to_string())) {
-      println!("Value for key 'b2': {:?}", value_to_vec(value, SerOptions::default()).unwrap()
-    );
+      value_to_vec(value, SerOptions::default()).unwrap().iter().map(|x|x.as_f64()).collect::<Vec<f64>>()
   } else {
-      println!("Key 'b2' not found in the dictionary");
+      Vec::new()
   }
 } else {
-  println!("Value is not a Dict");
-}
-
-
+  Vec::new()
+};
+let b1: Vec<f64> = if let Value::Dict(btree_map) = &data {
+  if let Some(value) = btree_map.get(&HashableValue::String("b1".to_string())) {
+      value_to_vec(value, SerOptions::default()).unwrap().iter().map(|x|x.as_f64()).collect::<Vec<f64>>()
+  } else {
+      Vec::new()
+  }
+} else {
+  Vec::new()
+};
+println!("{:?}",b1);
+println!("{:?}",b2);
 // let newwork: Value = serde_pickle::from_slice(&buffer,DeOptions::default()).expect("데이터를 역직렬화할 수 없습니다.");
 
 // 사용 예시
