@@ -1,22 +1,21 @@
+use super::weight;
 use bincode;
-use ndarray::prelude::*;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use polars::prelude::*;
 use polars::prelude::*;
+use serde::Deserialize;
 use serde_pickle::value::Value;
+use serde_pickle::Deserializer;
 use serde_pickle::HashableValue;
 use serde_pickle::SerOptions;
 use serde_pickle::{value_to_vec, DeOptions};
 use std::error::Error;
 use std::io::BufReader;
+use std::io::Cursor;
 use std::io::Read;
 use std::{collections::HashSet, fs::File, iter::Map};
-use serde_pickle::Deserializer;
-use std::io::Cursor;
-use serde::Deserialize;
-use super::weight::w1;
 /*
 
 신경망
@@ -565,51 +564,47 @@ pub fn main() {
     println!("{}", y);
     println!("{}", y.sum());
 
-    
-//   println!("{:?}",b3);
-  //   let  w1: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  //       if let Some(value) = btree_map.get(&HashableValue::String("W1".to_string())) {
-  //           value_to_vec(value, SerOptions::default())
-  //               .unwrap()
-  //               .iter()
-  //               .map(|x| x.as_f64())
-  //               .collect::<Vec<f64>>()
-  //       } else {
-  //           Vec::new()
-  //       }
-  //   } else {
-  //       Vec::new()
-  //   };
-  //   let w2: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  //       if let Some(value) = btree_map.get(&HashableValue::String("W2".to_string())) {
-  //           value_to_vec(value, SerOptions::default())
-  //               .unwrap()
-  //               .iter()
-  //               .map(|x| x.as_f64())
-  //               .collect::<Vec<f64>>()
-  //       } else {
-  //           Vec::new()
-  //       }
-  //   } else {
-  //       Vec::new()
-  //   };
-  //   let w3: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  //     if let Some(value) = btree_map.get(&HashableValue::String("W3".to_string())) {
-  //         value_to_vec(value, SerOptions::default())
-  //             .unwrap()
-  //             .iter()
-  //             .map(|x| x.as_f64())
-  //             .collect::<Vec<f64>>()
-  //     } else {
-  //         Vec::new()
-  //     }
-  // } else {
-  //     Vec::new()
-  // };
- 
-   
-    
+    let w1_array: Vec<f64> = weight::w1::w1
+        .iter()
+        .flat_map(|row| row.iter())
+        .cloned()
+        .collect();
+    let w1 = ArrayView2::from_shape((784, 50), &w1_array)
+        .unwrap()
+        .to_owned();
 
+    let w2_array: Vec<f64> = weight::w2::w2
+        .iter()
+        .flat_map(|row| row.iter())
+        .cloned()
+        .collect();
+    let w2 = ArrayView2::from_shape((50, 100), &w2_array)
+        .unwrap()
+        .to_owned();
+
+    let w3_array: Vec<f64> = weight::w3::w3
+        .iter()
+        .flat_map(|row| row.iter())
+        .cloned()
+        .collect();
+    let w3 = ArrayView2::from_shape((100, 10), &w3_array)
+        .unwrap()
+        .to_owned();
+
+    let b1=weight::b1::b1.to_vec();
+    let b2=weight::b2::b2.to_vec();
+    let b3=weight::b3::b3.to_vec();
+
+
+    let network = Network {
+        w1: w1.clone(),
+        w2: w2.clone(),
+        w3: w3.clone(),
+        b1: b1.clone(),
+        b2: b2.clone(),
+        b3: b3.clone(),
+    };
+    // Network::predict(network, x[1]);
 }
 //시그모이드
 fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
@@ -636,26 +631,25 @@ struct Network {
     b3: Vec<f64>,
 }
 impl Network {
-    pub fn predict(self,x:Array1<f64>)->Array1<f64> {
-      println!("{}",1);
-        let (w1, w2, w3) = (self.w1,self.w2,self.w3);
-        println!("{}",2);
+    pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
+        println!("{}", 1);
+        let (w1, w2, w3) = (self.w1, self.w2, self.w3);
+        println!("{}", 2);
 
-        let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2),arr1(&self.b3));
-        println!("{}",3);
-        println!("{:?}",x.shape());
-        println!("{:?}",w1.shape());
-        println!("{:?}",b1.shape());
+        let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
+        println!("{}", 3);
+        println!("{:?}", x.shape());
+        println!("{:?}", w1.shape());
+        println!("{:?}", b1.shape());
 
+        let a1 = x.dot(&w1) + &b1;
+        println!("{}", 4);
 
-        let a1= x.dot(&w1)+&b1;
-        println!("{}",4);
-
-        let z1= sigmoid(&a1);
-        let a2= z1.dot(&w2)+&b2;
-        let z2= sigmoid(&a2);
-        let a3= z2.dot(&w3)+&b3;
-        let y= softmax(&a3);
+        let z1 = sigmoid(&a1);
+        let a2 = z1.dot(&w2) + &b2;
+        let z2 = sigmoid(&a2);
+        let a3 = z2.dot(&w3) + &b3;
+        let y = softmax(&a3);
         y
     }
 }
