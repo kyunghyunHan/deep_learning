@@ -1,7 +1,6 @@
 
 use ndarray::prelude::*;
 use plotters::prelude::*;
-
 pub fn main(){
 
   //배열

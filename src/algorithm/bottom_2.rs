@@ -13,7 +13,12 @@ use std::error::Error;
 use std::io::BufReader;
 use std::io::Read;
 use std::{collections::HashSet, fs::File, iter::Map};
+use serde_pickle::Deserializer;
+use std::io::Cursor;
+use serde::Deserialize;
+use super::weight::w1;
 /*
+
 신경망
 
 가장 왼쪽 끝을 입력층 중간을 은닉충, 오른쪽 끝을 출력층 이라고 합니다.
@@ -560,55 +565,8 @@ pub fn main() {
     println!("{}", y);
     println!("{}", y.sum());
 
-    let file =
-        File::open("./dataset/digit-recognizer/sample_weight.pkl").expect("파일을 열 수 없습니다.");
-    // 파일에서 데이터 읽기
-    // 데이터 역직렬화
-    let data: Value =
-        serde_pickle::value_from_reader(file, DeOptions::default().replace_unresolved_globals())
-            .unwrap();
-
-    // let b1: Vec<f64> = if let Value::Dict(btree_map) = &data {
-    //     if let Some(value) = btree_map.get(&HashableValue) {
-    //         value_to_vec(value, SerOptions::default())
-    //             .unwrap()
-    //             .iter()
-    //             .map(|x| x.as_f64())
-    //             .collect::<Vec<f64>>()
-    //     } else {
-    //         Vec::new()
-    //     }
-    // } else {
-    //     Vec::new()
-    // };
-    println!("{:?}",data);
-  //   let b2: Vec<f64> = if let Value::Dict(btree_map) = &data {
-  //       if let Some(value) = btree_map.get(&HashableValue::String("b2".to_string())) {
-  //           value_to_vec(value, SerOptions::default())
-  //               .unwrap()
-  //               .iter()
-  //               .map(|x| x.as_f64())
-  //               .collect::<Vec<f64>>()
-  //       } else {
-  //           Vec::new()
-  //       }
-  //   } else {
-  //       Vec::new()
-  //   };
-    let b3: Vec<f32> = if let Value::Dict(btree_map) = &data {
-      if let Some(value) = btree_map.get(&HashableValue::String("b3".to_string())) {
-          value_to_vec(value, SerOptions::default())
-              .unwrap()
-              .iter()
-              .map(|x|* x as f32)
-              .collect::<Vec<f32>>()
-      } else {
-          Vec::new()
-      }
-  } else {
-      Vec::new()
-  };
-  println!("{:?}",b3);
+    
+//   println!("{:?}",b3);
   //   let  w1: Vec<f64> = if let Value::Dict(btree_map) = &data {
   //       if let Some(value) = btree_map.get(&HashableValue::String("W1".to_string())) {
   //           value_to_vec(value, SerOptions::default())
