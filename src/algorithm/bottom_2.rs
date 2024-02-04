@@ -604,7 +604,12 @@ pub fn main() {
         b2: b2.clone(),
         b3: b3.clone(),
     };
-    // Network::predict(network, x[1]);
+
+   let aa:Vec<f64> = Mnist::new().x_train[1].clone().iter().map(|x|*x as f64).collect();
+   let aaa: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= arr1(&aa);
+       Network::predict(network, aaa);
+
+
 }
 //시그모이드
 fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
