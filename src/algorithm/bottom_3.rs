@@ -7,6 +7,7 @@ pub fn main() {
     let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]);
 
     println!("{}", sum_squares_error(&y, &t));
+    println!("{}", cross_entropy_error(&y, &t));
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -16,4 +17,16 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
         .map(|(&y_i, &t_i)| (y_i - t_i).powi(2))
         .sum::<f64>();
     0.5 * squared_diff
+}
+
+
+fn cross_entropy_error(y: &Array1<f64>, t: &Array1<f64>)->f64{
+    let delta= 1e-7;
+    let y = y.map(|&y_i| y_i + delta);
+
+    let log_y = y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln());
+
+    let neg_sum_log_y: f64 = log_y.map(|x| -x).sum();
+
+    neg_sum_log_y
 }

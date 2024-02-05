@@ -1,23 +1,11 @@
 use super::weight;
-use bincode;
-use itertools::Itertools;
 use ndarray::prelude::*;
-use ndarray::stack;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use polars::prelude::*;
-use polars::prelude::*;
-use serde::Deserialize;
-use serde_pickle::value::Value;
-use serde_pickle::Deserializer;
-use serde_pickle::HashableValue;
-use serde_pickle::SerOptions;
-use serde_pickle::{value_to_vec, DeOptions};
-use std::error::Error;
-use std::io::BufReader;
-use std::io::Cursor;
-use std::io::Read;
-use std::{collections::HashSet, fs::File, iter::Map};
+use rayon::prelude::*;
+use std::time::Instant;
+
 /*
 
 신경망
@@ -336,19 +324,8 @@ impl Mnist {
     }
 }
 
-fn step_function(x: i32) -> i32 {
-    if x > 0 {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-fn stet_function(x: &Array1<f64>) -> Array1<f64> {
-    x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
-}
-
 /*
-def stet_function(x):
+def step_function(x):
     x=x>0
     return y.astype(np.int)
 
@@ -357,10 +334,10 @@ def stet_function(x):
 /*========Main======== */
 pub fn main() {
     let x = arr1(&[-5.0, 5.0, 0.1]);
-    let y = stet_function(&x);
+    let y = step_function(&x);
     /*계단함수 구현 */
     let x = Array::range(-5.0, 5., 0.1);
-    let y = stet_function(&x);
+    let y = step_function(&x);
 
     // 그래프 그리기
     let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
@@ -420,7 +397,7 @@ pub fn main() {
 
     /*계단 함수와 비교 */
 
-    let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = stet_function(&x);
+    let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = step_function(&x);
 
     // 그래프 그리기
     let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
@@ -602,21 +579,11 @@ pub fn main() {
         b2: b2.clone(),
         b3: b3.clone(),
     };
-    let mut accuracy_cnt = 0;
-    let mut batch_size = 100;
+    let  mut accuracy_cnt = 0;
+    let  batch_size = 100;
 
     let x_test = Mnist::new().x_test;
     let y_test = Mnist::new().y_test;
-    let a = arr2(&[[1.0], [2f64]]);
-    let vec_of_vec: Vec<Vec<f64>> = a
-        .axis_iter(Axis(0))
-        .map(|row| softmax(&row.to_owned()).to_vec()) // or use Clone::clone if you prefer
-        .collect();
-    let aa: [[f64; 1]; 1] = [[1.0]];
-    let aa = vec![vec![1.0]];
-    let array_2d: Array2<f64> =
-        Array2::from_shape_vec((1, 1), aa.into_iter().flatten().collect()).unwrap();
-    println!("{}", array_2d);
 
     // 2D     // for i  in 0..10000{
     //     let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
@@ -628,20 +595,46 @@ pub fn main() {
 
     // }
     // println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
+    //     let start_time = Instant::now();
 
-    for i in (0..10000).step_by(batch_size) {
-        let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
-        let y_batch = Network::predict(network.clone(), &x_batch);
-        let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
-        println!("{}",p);
-        accuracy_cnt += y_test
-        .slice(s![i..i + batch_size])
-        .iter()
-        .zip(p.iter())
-        .filter(|&(expected, predicted)| *expected == *predicted as i64)
-        .count();
-    }
+    //     for i in (0..10000).step_by(batch_size) {
+    //         let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
+    //         let y_batch = Network::predict(network.clone(), &x_batch);
+    //         let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
+    //         println!("{}",p);
+    //         accuracy_cnt += y_test
+    //         .slice(s![i..i + batch_size])
+    //         .iter()
+    //         .zip(p.iter())
+    //         .filter(|&(expected, predicted)| *expected == *predicted as i64)
+    //         .count();
+    //     }
+    //     let end_time = Instant::now();
+    // let elapsed_time = end_time - start_time;
+    // println!("Elapsed Time: {:?}", elapsed_time);
     println!("Accuracy:{}", accuracy_cnt as f64 / 10000 as f64);
+    let start_time = Instant::now();
+
+    let accuracy_cnt: usize = (0..10000)
+        .into_par_iter()
+        .step_by(batch_size)
+        .map(|i| {
+            let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
+            let y_batch = Network::predict(network.clone(), &x_batch);
+            let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
+            y_test
+                .slice(s![i..i + batch_size])
+                .iter()
+                .zip(p.iter())
+                .filter(|&(expected, predicted)| *expected == *predicted as i64)
+                .count()
+        })
+        .sum();
+    let end_time = Instant::now();
+    let elapsed_time = end_time - start_time;
+    println!("Elapsed Time: {:?}", elapsed_time);
+
+    println!("Accuracy: {}", accuracy_cnt as f64 / 10000.0);
 
     let a = arr1(&[0.3, 2.9, 4.0]);
     let y = softmax(&a);
@@ -709,27 +702,34 @@ impl Network {
             .axis_iter(Axis(0))
             .map(|row| softmax(&row.to_owned()))
             .collect::<Vec<_>>()
-            .iter().map(|x|x.to_vec())
+            .iter()
+            .map(|x| x.to_vec())
             .collect();
-        let array_2d: Array2<f64> =
-            Array2::from_shape_vec((a3.shape()[0], a3.shape()[1]), vec_of_vec.into_iter().flatten().collect()).unwrap();
+        let array_2d: Array2<f64> = Array2::from_shape_vec(
+            (a3.shape()[0], a3.shape()[1]),
+            vec_of_vec.into_iter().flatten().collect(),
+        )
+        .unwrap();
         array_2d
 
         // let a2: Array2<f64> = arr2(&softmax_matrix.,into_iter().map(|arr| arr.to_vec()).collect::<Vec<f64>>());
     }
 }
+/*===========activation function========= */
 
+// fn step_function(x: i32) -> i32 {
+//     if x > 0 {
+//         return 1;
+//     } else {
+//         return 0;
+//     }
+// }
+fn step_function(x: &Array1<f64>) -> Array1<f64> {
+    x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
+}
 fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let c: f64 = a[a.argmax().unwrap()];
     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
 }
-
-
-
-// fn softmax(a: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array<f64, ndarray::Dim<[usize; 2]>> {
-//     let exp_a = a.mapv(f64::exp);
-//     let sum_exp_a = exp_a.sum_axis(Axis(1));
-//     exp_a / sum_exp_a.insert_axis(Axis(1))
-// }
