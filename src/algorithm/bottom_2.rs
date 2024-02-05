@@ -2,6 +2,7 @@ use super::weight;
 use bincode;
 use itertools::Itertools;
 use ndarray::prelude::*;
+use ndarray::stack;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use polars::prelude::*;
@@ -606,8 +607,18 @@ pub fn main() {
 
     let x_test = Mnist::new().x_test;
     let y_test = Mnist::new().y_test;
+    let a = arr2(&[[1.0], [2f64]]);
+    let vec_of_vec: Vec<Vec<f64>> = a
+        .axis_iter(Axis(0))
+        .map(|row| softmax(&row.to_owned()).to_vec()) // or use Clone::clone if you prefer
+        .collect();
+    let aa: [[f64; 1]; 1] = [[1.0]];
+    let aa = vec![vec![1.0]];
+    let array_2d: Array2<f64> =
+        Array2::from_shape_vec((1, 1), aa.into_iter().flatten().collect()).unwrap();
+    println!("{}", array_2d);
 
-    // for i  in 0..10000{
+    // 2D     // for i  in 0..10000{
     //     let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
     //     let p = y.argmax().unwrap();//확률이 가장 높은 원소의 인덱스를 얻는다
 
@@ -617,19 +628,24 @@ pub fn main() {
 
     // }
     // println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
-    let i = 0;
 
     for i in (0..10000).step_by(batch_size) {
         let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
         let y_batch = Network::predict(network.clone(), &x_batch);
-        let p = y_batch.argmax().unwrap();
+        let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
+        println!("{}",p);
         accuracy_cnt += y_test
-            .slice(s![i..i + batch_size])
-            .iter()
-            .filter(|&&y| p.1 == y as usize)
-            .count();
+        .slice(s![i..i + batch_size])
+        .iter()
+        .zip(p.iter())
+        .filter(|&(expected, predicted)| *expected == *predicted as i64)
+        .count();
     }
     println!("Accuracy:{}", accuracy_cnt as f64 / 10000 as f64);
+
+    let a = arr1(&[0.3, 2.9, 4.0]);
+    let y = softmax(&a);
+    println!("{}", y);
 }
 //시그모이드
 fn sigmoid(x: f64) -> f64 {
@@ -679,10 +695,7 @@ impl Network {
     //     println!("{}",y);
     //     y
     // }
-    fn predict(
-        self,
-        x: &Array<f64, ndarray::Dim<[usize; 2]>>,
-    ) -> Array<f64, ndarray::Dim<[usize; 2]>> {
+    fn predict(self, x: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array2<f64> {
         let (w1, w2, w3) = (self.w1, self.w2, self.w3);
         let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
 
@@ -691,22 +704,29 @@ impl Network {
         let a2 = z1.dot(&w2) + b2;
         let z2 = a2.map(|&x| sigmoid(x));
         let a3 = z2.dot(&w3) + b3;
-        softmax(&a3)
+
+        let vec_of_vec: Vec<Vec<f64>> = a3
+            .axis_iter(Axis(0))
+            .map(|row| softmax(&row.to_owned()))
+            .collect::<Vec<_>>()
+            .iter().map(|x|x.to_vec())
+            .collect();
+        let array_2d: Array2<f64> =
+            Array2::from_shape_vec((a3.shape()[0], a3.shape()[1]), vec_of_vec.into_iter().flatten().collect()).unwrap();
+        array_2d
+
+        // let a2: Array2<f64> = arr2(&softmax_matrix.,into_iter().map(|arr| arr.to_vec()).collect::<Vec<f64>>());
     }
 }
 
-fn softmax(a: &Array2<f64>) -> Array2<f64> {
+fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let c: f64 = a[a.argmax().unwrap()];
     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
 }
-// fn softmax(a: &Array1<f64>) -> Array1<f64> {
-//     let c: f64 = a[a.argmax().unwrap()];
-//     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
-//     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
-//     exp_a / sum_exp_a
-// }
+
+
 
 // fn softmax(a: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array<f64, ndarray::Dim<[usize; 2]>> {
 //     let exp_a = a.mapv(f64::exp);
