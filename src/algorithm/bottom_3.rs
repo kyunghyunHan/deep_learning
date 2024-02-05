@@ -54,6 +54,8 @@ pub fn main() {
     println!("{:?}", y1);
     println!("{}",numerical_diff(function_tmp1,5.0));//0
     println!("{}",numerical_diff(function_tmp1,3.0));
+    println!("{}",numerical_gradient(function_2,arr1(&[3.0,0.0])));
+
 
 
 }
@@ -118,3 +120,26 @@ where
    return (f(x+h)-f(x-h))/(2.0*h)
 }
 
+fn numerical_gradient<F>(f:F,x:Array1<f64>)->Array1<f64>
+where
+    F:Fn(Array1<f64>)->f64
+{
+    let mut x_clone = x.clone(); // Clone x before entering the loop
+   let h= 1e-4;
+   let mut grad:Array1<f64> = Array::zeros(x.raw_dim());
+   for idx in 0..x.len(){
+    let tmp_val = x_clone[idx];
+    //f(x+h)계산
+    x_clone[idx] = tmp_val+h;
+    let fxh1= f(x_clone.clone());
+
+    //f(x-h)계산
+    x_clone[idx]= tmp_val-h;
+    let fxh2= f(x_clone.clone());
+
+    grad[idx]= (fxh1-fxh2)/(2.0 * h);
+    x_clone[idx]= tmp_val;
+   }
+
+   grad
+}
