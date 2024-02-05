@@ -278,7 +278,7 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 struct Mnist {
     x_train: Array2<i64>,
     y_train: Array1<i64>,
-    x_test: Array2<i64>,
+    x_test: Array2<f64>,
     y_test: Array1<i64>,
 }
 
@@ -297,13 +297,15 @@ impl Mnist {
             .unwrap()
             .finish()
             .unwrap();
-        let y_train = arr1(&train_df
-            .column("label")
-            .unwrap()
-            .i64()
-            .unwrap()
-            .into_no_null_iter()
-            .collect::<Vec<i64>>());
+        let y_train = arr1(
+            &train_df
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
         let x_train = train_df
             .drop("label")
             .unwrap()
@@ -311,17 +313,19 @@ impl Mnist {
             .unwrap();
 
         let x_test = test_df
-            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
             .unwrap();
-       
-        let y_test = arr1(&submission
-            .column("label")
-            .unwrap()
-            .i64()
-            .unwrap()
-            .into_no_null_iter()
-            .collect::<Vec<i64>>());
-        
+
+        let y_test = arr1(
+            &submission
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+
         Mnist {
             x_train,
             y_train,
@@ -378,7 +382,7 @@ pub fn main() {
 
     /*시그모이드 함수 구현*/
     let x = Array1::from(vec![-1.0, 1.0, 2.0]);
-    println!("{}", sigmoid(&x));
+    // println!("{}", sigmoid(&x));
 
     let t = arr1(&[1.0, 2.0, 3.0]);
     println!("{}", 1.0 + &t);
@@ -386,7 +390,7 @@ pub fn main() {
     println!("{}", 1.0 / &t);
 
     let x = Array::range(-5.0, 5., 0.1);
-    let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = sigmoid(&x);
+    // let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = sigmoid(&x);
 
     // 그래프 그리기
     let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
@@ -508,24 +512,24 @@ pub fn main() {
     let a1 = x.dot(&w1) + b1;
     println!("{:?}", a1.shape());
 
-    let z1 = sigmoid(&a1);
+    // let z1 = sigmoid(&a1);
     println!("{}", a1);
-    println!("{}", z1);
+    // println!("{}", z1);
 
     let w2 = arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]);
     let b2 = arr1(&[0.1, 0.2]);
 
-    println!("{:?}", z1.shape());
+    // println!("{:?}", z1.shape());
     println!("{:?}", w2.shape());
     println!("{:?}", b2.shape());
 
-    let a2 = z1.dot(&w2) + b2;
-    let z2 = sigmoid(&a2);
+    // let a2 = z1.dot(&w2) + b2;
+    // let z2 = sigmoid(&a2);
 
     let w3 = arr2(&[[0.1, 0.3], [0.2, 0.4]]);
     let b3 = arr1(&[0.1, 0.2]);
 
-    let a3 = z2.dot(&w3) + b3;
+    // let a3 = z2.dot(&w3) + b3;
 
     let y = idenity_function(&x);
 
@@ -554,7 +558,7 @@ pub fn main() {
     );
 
     let a = arr1(&[0.3, 2.9, 4.0]);
-    let y = softmax(&a);
+    // let y = softmax(&a);
     println!("{}", y);
     println!("{}", y.sum());
 
@@ -585,12 +589,11 @@ pub fn main() {
         .unwrap()
         .to_owned();
 
-    let b1=weight::b1::b1.to_vec();
-    let b2=weight::b2::b2.to_vec();
-    let b3=weight::b3::b3.to_vec();
-    
-  
-    let  network = Network {
+    let b1 = weight::b1::b1.to_vec();
+    let b2 = weight::b2::b2.to_vec();
+    let b3 = weight::b3::b3.to_vec();
+
+    let network = Network {
         w1: w1.clone(),
         w2: w2.clone(),
         w3: w3.clone(),
@@ -599,27 +602,38 @@ pub fn main() {
         b3: b3.clone(),
     };
     let mut accuracy_cnt = 0;
+    let mut batch_size = 100;
+
     let x_test = Mnist::new().x_test;
     let y_test = Mnist::new().y_test;
 
-    for i  in 0..10000{
-        let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
-        let p = y.argmax().unwrap();
+    // for i  in 0..10000{
+    //     let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
+    //     let p = y.argmax().unwrap();//확률이 가장 높은 원소의 인덱스를 얻는다
 
-        if p ==y_test[i] as usize{
-             accuracy_cnt+=1
-        }
-     
+    //     if p ==y_test[i] as usize{
+    //          accuracy_cnt+=1
+    //     }
+
+    // }
+    // println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
+    let i = 0;
+
+    for i in (0..10000).step_by(batch_size) {
+        let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
+        let y_batch = Network::predict(network.clone(), &x_batch);
+        let p = y_batch.argmax().unwrap();
+        accuracy_cnt += y_test
+            .slice(s![i..i + batch_size])
+            .iter()
+            .filter(|&&y| p.1 == y as usize)
+            .count();
     }
-    println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
-
-
-
-
+    println!("Accuracy:{}", accuracy_cnt as f64 / 10000 as f64);
 }
 //시그모이드
-fn sigmoid(x: &Array1<f64>) -> Array1<f64> {
-    x.map(|val: &f64| 1.0 / (1.0 + f64::exp(-val)))
+fn sigmoid(x: f64) -> f64 {
+    1.0 / (1.0 + (-x).exp())
 }
 
 /*ReLU */
@@ -643,36 +657,59 @@ struct Network {
     b3: Vec<f64>,
 }
 impl Network {
-    pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
-        println!("{}", 1);
+    // pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
+    //     println!("{}", 1);
+    //     let (w1, w2, w3) = (self.w1, self.w2, self.w3);
+    //     println!("{}", 2);
+
+    //     let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
+    //     println!("{}", 3);
+    //     println!("{:?}", x.shape());
+    //     println!("{:?}", w1.shape());
+    //     println!("{:?}", b1.shape());
+
+    //     let a1 = x.dot(&w1) + &b1;
+    //     println!("{}", 4);
+
+    //     let z1 = sigmoid(&a1);
+    //     let a2 = z1.dot(&w2) + &b2;
+    //     let z2 = sigmoid(&a2);
+    //     let a3 = z2.dot(&w3) + &b3;
+    //     let y = softmax(&a3);
+    //     println!("{}",y);
+    //     y
+    // }
+    fn predict(
+        self,
+        x: &Array<f64, ndarray::Dim<[usize; 2]>>,
+    ) -> Array<f64, ndarray::Dim<[usize; 2]>> {
         let (w1, w2, w3) = (self.w1, self.w2, self.w3);
-        println!("{}", 2);
-
         let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
-        println!("{}", 3);
-        println!("{:?}", x.shape());
-        println!("{:?}", w1.shape());
-        println!("{:?}", b1.shape());
 
-        let a1 = x.dot(&w1) + &b1;
-        println!("{}", 4);
-
-        let z1 = sigmoid(&a1);
-        let a2 = z1.dot(&w2) + &b2;
-        let z2 = sigmoid(&a2);
-        let a3 = z2.dot(&w3) + &b3;
-        let y = softmax(&a3);
-        println!("{}",y);
-        y
+        let a1 = x.dot(&w1) + b1;
+        let z1 = a1.map(|&x| sigmoid(x));
+        let a2 = z1.dot(&w2) + b2;
+        let z2 = a2.map(|&x| sigmoid(x));
+        let a3 = z2.dot(&w3) + b3;
+        softmax(&a3)
     }
 }
 
-
-fn softmax(a: &Array1<f64>) -> Array1<f64> {
+fn softmax(a: &Array2<f64>) -> Array2<f64> {
     let c: f64 = a[a.argmax().unwrap()];
     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
 }
+// fn softmax(a: &Array1<f64>) -> Array1<f64> {
+//     let c: f64 = a[a.argmax().unwrap()];
+//     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
+//     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
+//     exp_a / sum_exp_a
+// }
 
-
+// fn softmax(a: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array<f64, ndarray::Dim<[usize; 2]>> {
+//     let exp_a = a.mapv(f64::exp);
+//     let sum_exp_a = exp_a.sum_axis(Axis(1));
+//     exp_a / sum_exp_a.insert_axis(Axis(1))
+// }
