@@ -1,5 +1,6 @@
 use super::weight;
 use bincode;
+use itertools::Itertools;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
@@ -275,10 +276,10 @@ MNIST는 0부터 9까지의  손글씨 숫자 이미지 집합입니다.훈련 �
 //  0.00576806, -0.09652461, -0.05131314,  0.02199687, -0.04358608];
 
 struct Mnist {
-    x_train: Vec<Vec<i64>>,
-    y_train: Vec<i64>,
-    x_test: Vec<Vec<i64>>,
-    y_test: Vec<i64>,
+    x_train: Array2<i64>,
+    y_train: Array1<i64>,
+    x_test: Array2<i64>,
+    y_test: Array1<i64>,
 }
 
 impl Mnist {
@@ -287,47 +288,40 @@ impl Mnist {
             .unwrap()
             .finish()
             .unwrap();
-        let test_df = CsvReader::from_path("./dataset/digit-recognizer/test.csv")
+        let test_df = CsvReader::from_path("./dataset/x_test_data.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap();
+        let submission = CsvReader::from_path("./dataset/y_test_data.csv")
             .unwrap()
             .finish()
             .unwrap();
-        let submission = CsvReader::from_path("./dataset/digit-recognizer/sample_submission.csv")
-            .unwrap()
-            .finish()
-            .unwrap();
-        let y_train = train_df
+        let y_train = arr1(&train_df
             .column("label")
             .unwrap()
             .i64()
             .unwrap()
             .into_no_null_iter()
-            .collect::<Vec<i64>>();
-        let x_train_data = train_df
+            .collect::<Vec<i64>>());
+        let x_train = train_df
             .drop("label")
             .unwrap()
             .to_ndarray::<Int64Type>(IndexOrder::Fortran)
             .unwrap();
-        let mut x_train: Vec<Vec<_>> = Vec::new();
-        for row in x_train_data.outer_iter() {
-            let row_vec = row.iter().cloned().collect();
-            x_train.push(row_vec);
-        }
-        let x_test_data = test_df
+
+        let x_test = test_df
             .to_ndarray::<Int64Type>(IndexOrder::Fortran)
             .unwrap();
-        let mut x_test: Vec<Vec<_>> = Vec::new();
-        for row in x_test_data.outer_iter() {
-            let row_vec = row.iter().cloned().collect();
-            x_test.push(row_vec);
-        }
-        let y_test = submission
-            .column("Label")
+       
+        let y_test = arr1(&submission
+            .column("label")
             .unwrap()
             .i64()
             .unwrap()
             .into_no_null_iter()
-            .collect::<Vec<i64>>();
-
+            .collect::<Vec<i64>>());
+        
         Mnist {
             x_train,
             y_train,
@@ -594,9 +588,9 @@ pub fn main() {
     let b1=weight::b1::b1.to_vec();
     let b2=weight::b2::b2.to_vec();
     let b3=weight::b3::b3.to_vec();
-
-
-    let network = Network {
+    
+  
+    let  network = Network {
         w1: w1.clone(),
         w2: w2.clone(),
         w3: w3.clone(),
@@ -604,10 +598,22 @@ pub fn main() {
         b2: b2.clone(),
         b3: b3.clone(),
     };
+    let mut accuracy_cnt = 0;
+    let x_test = Mnist::new().x_test;
+    let y_test = Mnist::new().y_test;
 
-   let aa:Vec<f64> = Mnist::new().x_train[1].clone().iter().map(|x|*x as f64).collect();
-   let aaa: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>>= arr1(&aa);
-       Network::predict(network, aaa);
+    for i  in 0..10000{
+        let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
+        let p = y.argmax().unwrap();
+
+        if p ==y_test[i] as usize{
+             accuracy_cnt+=1
+        }
+     
+    }
+    println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
+
+
 
 
 }
@@ -627,6 +633,7 @@ fn relu(x: &Array1<f64>) -> Array1<f64> {
 fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
     return x.clone();
 }
+#[derive(Clone)]
 struct Network {
     w1: Array2<f64>,
     w2: Array2<f64>,
@@ -655,14 +662,17 @@ impl Network {
         let z2 = sigmoid(&a2);
         let a3 = z2.dot(&w3) + &b3;
         let y = softmax(&a3);
+        println!("{}",y);
         y
     }
 }
 
-fn forward() {}
+
 fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let c: f64 = a[a.argmax().unwrap()];
     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
 }
+
+
