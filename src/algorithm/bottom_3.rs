@@ -67,6 +67,22 @@ pub fn main() {
         "학습률이 너무 작은 예{}",
         gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
     );
+    let simple= SimpleNet{w:arr2(&[[0.0]])};
+    let net  =SimpleNet::_init_(simple);
+    println!("{:?}",net);
+
+    let x= arr1(&[0.6,0.9]);
+    let p =  net.clone().arr1_predict(x.clone());
+    println!("{:?}",p);
+    println!("{}",p.argmax().unwrap());
+    let t= arr1(&[0f64,0f64,1f64]);
+    println!("{:?}",SimpleNet::arr1_loss(net.clone(), x.clone(), t));
+    
+
+    
+
+
+
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -174,12 +190,13 @@ where
     }
     x
 }
-
-struct simpleNet {
+#[derive(Debug,Clone)]
+struct SimpleNet {
     w: Array2<f64>,
 }
-impl simpleNet {
-    fn _init_(mut self) {
+
+impl SimpleNet {
+    pub fn _init_(mut self)->Self {
         let mut rng = rand::thread_rng();
         let matrix: [[f64; 3]; 2] = {
             let mut arr = [[0.0; 3]; 2];
@@ -191,8 +208,13 @@ impl simpleNet {
             arr
         };
         self.w = arr2(&matrix);
+        self
     }
     fn predict(self, x: Array2<f64>) -> Array2<f64> {
+        x.dot(&self.w)
+    }
+
+    fn arr1_predict(self, x: Array1<f64>) -> Array1<f64> {
         x.dot(&self.w)
     }
     fn loss(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
@@ -213,6 +235,13 @@ impl simpleNet {
 
         loss
     }
+    fn arr1_loss(self, x: Array1<f64>, t: Array1<f64>) -> f64 {
+        let z = self.arr1_predict(x);
+        let y= softmax(&z.to_owned());
+        let loss = cross_entropy_error(&y, &t);
+
+        loss
+    }
 }
 fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let c: f64 = a[a.argmax().unwrap()];
@@ -220,6 +249,9 @@ fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
 }
+// fn f(w){
+//     return SimpleNet::loss(self, x, t);
+// }
 
 struct TwoLayerNet {}
 impl TwoLayerNet {

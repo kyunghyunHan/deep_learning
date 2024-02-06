@@ -557,7 +557,7 @@ pub fn main() {
         b2: b2.clone(),
         b3: b3.clone(),
     };
-    let  mut accuracy_cnt = 0;
+    let   accuracy_cnt = 0;
     let  batch_size = 100;
 
     let x_test = Mnist::new().x_test;
