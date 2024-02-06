@@ -52,12 +52,14 @@ pub fn main() {
     let x1 = Array1::range(0.0, 20.0, 0.1);
     let y1 = x1.map(|&elem| function_1(elem));
     println!("{:?}", y1);
-    println!("{}",numerical_diff(function_tmp1,5.0));//0
-    println!("{}",numerical_diff(function_tmp1,3.0));
-    println!("{}",numerical_gradient(function_2,arr1(&[3.0,0.0])));
+    println!("{}", numerical_diff(function_tmp1, 5.0)); //0
+    println!("{}", numerical_diff(function_tmp1, 3.0));
+    println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
 
-
-
+    let init_x = arr1(&[-3.0, 4.0]);
+    println!("{}", gradient_descent(function_2, init_x,0.1,100));
+    println!("학습률이 너무 큰 예{}", gradient_descent(function_2, arr1(&[-3.0, 4.0]),10.0,100));
+    println!("학습률이 너무 작은 예{}", gradient_descent(function_2, arr1(&[-3.0, 4.0]),1e-10,100));
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -70,7 +72,6 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
 }
 
 fn cross_entropy_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
-    
     let delta = 1e-7;
     let y = y.map(|&y_i| y_i + delta);
 
@@ -86,10 +87,20 @@ fn cross_entropy_error_arr2(y: &Array2<f64>, t: &Array2<f64>) -> f64 {
         let y = y.clone().into_shape((1, y.len())).unwrap();
 
         let batch_size = y.shape()[0];
-        return -y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln()).sum::<f64>() / batch_size as f64;
+        return -y
+            .iter()
+            .zip(t.iter())
+            .map(|(&y_i, &t_i)| t_i * y_i.ln())
+            .sum::<f64>()
+            / batch_size as f64;
     } else {
         let batch_size = y.shape()[0];
-        return -y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln()).sum::<f64>() / batch_size as f64;
+        return -y
+            .iter()
+            .zip(t.iter())
+            .map(|(&y_i, &t_i)| t_i * y_i.ln())
+            .sum::<f64>()
+            / batch_size as f64;
     }
 }
 /* */
@@ -101,45 +112,70 @@ fn random_choice(train_size: usize, batch_size: usize) -> Vec<usize> {
     batch_mask
 }
 
-fn function_1(x:f64)->f64{
-    0.01 * x.powf(2.0) +0.1*x
+fn function_1(x: f64) -> f64 {
+    0.01 * x.powf(2.0) + 0.1 * x
 }
-fn function_2 (x:&[f64])->f64{
+fn function_2(x: Array1<f64>) -> f64 {
     x[0].powf(2.0) + x[1].powf(2.0)
 }
+
 /*편미분 */
-fn function_tmp1(x0:f64)->f64{
-    x0* x0 +4f64.powf(2.0)
+fn function_tmp1(x0: f64) -> f64 {
+    x0 * x0 + 4f64.powf(2.0)
 }
 /*미분 */
-fn numerical_diff<F>(f:F,x:f64)->f64
+fn numerical_diff<F>(f: F, x: f64) -> f64
 where
-    F:Fn(f64)->f64
+    F: Fn(f64) -> f64,
 {
-   let h = 1e-4;//0.0001
-   return (f(x+h)-f(x-h))/(2.0*h)
+    let h = 1e-4; //0.0001
+    return (f(x + h) - f(x - h)) / (2.0 * h);
 }
 
-fn numerical_gradient<F>(f:F,x:Array1<f64>)->Array1<f64>
+fn numerical_gradient<F>(f: F, x: Array1<f64>) -> Array1<f64>
 where
-    F:Fn(Array1<f64>)->f64
+    F: Fn(Array1<f64>) -> f64,
 {
     let mut x_clone = x.clone(); // Clone x before entering the loop
-   let h= 1e-4;
-   let mut grad:Array1<f64> = Array::zeros(x.raw_dim());
-   for idx in 0..x.len(){
-    let tmp_val = x_clone[idx];
-    //f(x+h)계산
-    x_clone[idx] = tmp_val+h;
-    let fxh1= f(x_clone.clone());
+    let h = 1e-4;
+    let mut grad: Array1<f64> = Array::zeros(x.raw_dim());
+    for idx in 0..x.len() {
+        let tmp_val = x_clone[idx];
+        //f(x+h)계산
+        x_clone[idx] = tmp_val + h;
+        let fxh1 = f(x_clone.clone());
 
-    //f(x-h)계산
-    x_clone[idx]= tmp_val-h;
-    let fxh2= f(x_clone.clone());
+        //f(x-h)계산
+        x_clone[idx] = tmp_val - h;
+        let fxh2 = f(x_clone.clone());
 
-    grad[idx]= (fxh1-fxh2)/(2.0 * h);
-    x_clone[idx]= tmp_val;
-   }
+        grad[idx] = (fxh1 - fxh2) / (2.0 * h);
+        x_clone[idx] = tmp_val;
+    }
 
-   grad
+    grad
+}
+
+fn gradient_descent<F>(f: F, init_x: Array1<f64>,ir:f64,step_num:i32) -> Array1<f64>
+where
+    F: Fn(Array1<f64>) -> f64,
+{
+
+    let mut x = init_x;
+    for _ in 0..step_num {
+        let grad = numerical_gradient(&f, x.clone());
+        x = x - ir * grad;
+    }
+    x
+}
+
+
+struct simpleNet{}
+impl simpleNet{
+    fn _init_(self){}
+
+
+    fn predict(self,x:f64){}
+    fn loss(self,x:f64,t:f64){}
+    
 }
