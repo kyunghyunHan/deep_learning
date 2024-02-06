@@ -4,3 +4,8 @@
 fn  main(){
     
 }
+
+struct SGD{}
+impl SGD{
+
+}

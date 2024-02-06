@@ -1,5 +1,6 @@
 use super::weight;
 use ndarray::prelude::*;
+use ndarray_stats::QuantileExt;
 use polars::prelude::*;
 use rand::prelude::*;
 use std::ops::Index;
@@ -57,9 +58,15 @@ pub fn main() {
     println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
 
     let init_x = arr1(&[-3.0, 4.0]);
-    println!("{}", gradient_descent(function_2, init_x,0.1,100));
-    println!("학습률이 너무 큰 예{}", gradient_descent(function_2, arr1(&[-3.0, 4.0]),10.0,100));
-    println!("학습률이 너무 작은 예{}", gradient_descent(function_2, arr1(&[-3.0, 4.0]),1e-10,100));
+    println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
+    println!(
+        "학습률이 너무 큰 예{}",
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
+    );
+    println!(
+        "학습률이 너무 작은 예{}",
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
+    );
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -156,11 +163,10 @@ where
     grad
 }
 
-fn gradient_descent<F>(f: F, init_x: Array1<f64>,ir:f64,step_num:i32) -> Array1<f64>
+fn gradient_descent<F>(f: F, init_x: Array1<f64>, ir: f64, step_num: i32) -> Array1<f64>
 where
     F: Fn(Array1<f64>) -> f64,
 {
-
     let mut x = init_x;
     for _ in 0..step_num {
         let grad = numerical_gradient(&f, x.clone());
@@ -169,13 +175,57 @@ where
     x
 }
 
+struct simpleNet {
+    w: Array2<f64>,
+}
+impl simpleNet {
+    fn _init_(mut self) {
+        let mut rng = rand::thread_rng();
+        let matrix: [[f64; 3]; 2] = {
+            let mut arr = [[0.0; 3]; 2];
+            for i in 0..2 {
+                for j in 0..3 {
+                    arr[i][j] = rng.gen::<f64>();
+                }
+            }
+            arr
+        };
+        self.w = arr2(&matrix);
+    }
+    fn predict(self, x: Array2<f64>) -> Array2<f64> {
+        x.dot(&self.w)
+    }
+    fn loss(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
+        let z = self.predict(x);
+        let vec_of_vec: Vec<Vec<f64>> = z
+            .axis_iter(Axis(0))
+            .map(|row| softmax(&row.to_owned()))
+            .collect::<Vec<_>>()
+            .iter()
+            .map(|x| x.to_vec())
+            .collect();
+        let y: Array2<f64> = Array2::from_shape_vec(
+            (z.shape()[0], z.shape()[1]),
+            vec_of_vec.into_iter().flatten().collect(),
+        )
+        .unwrap();
+        let loss = cross_entropy_error_arr2(&y, &t);
 
-struct simpleNet{}
-impl simpleNet{
-    fn _init_(self){}
+        loss
+    }
+}
+fn softmax(a: &Array1<f64>) -> Array1<f64> {
+    let c: f64 = a[a.argmax().unwrap()];
+    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
+    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
+    exp_a / sum_exp_a
+}
 
-
-    fn predict(self,x:f64){}
-    fn loss(self,x:f64,t:f64){}
-    
+struct TwoLayerNet {}
+impl TwoLayerNet {
+    fn init() {}
+    fn predict() {}
+    fn loss() {}
+    fn accuracy() {}
+    fn numerical_gradient() {}
 }
