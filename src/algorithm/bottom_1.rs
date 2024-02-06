@@ -171,17 +171,7 @@ NAND에서 컴퓨터까지
 
 
 }
-// fn and(x1:f64,x2:f64)->i32{
-//     let  w1= 0.5;
-//     let  w2= 0.5;
-//     let  theta= 0.7;
-//     let  tmp=  x1*w1 +x2*w2;
-//     if tmp <=theta{
-//         return 0;
-//     }else{
-//         return 1
-//     }
-// }
+
 
 fn and(x1:f64,x2:f64)->i32{
     let  x= arr1(&[x1,x2]);
