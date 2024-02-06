@@ -1,4 +1,5 @@
 /*오차역전파법 */
+use std::time::Instant;
 
 struct MulLayer {
     x: Option<f64>,
