@@ -1,8 +1,13 @@
 /*합성곱 신경망(CNN) */
-fn main(){}
+fn main() {}
 
-struct Convolution{}
-impl Convolution{
+struct Convolution {
+    w:f64,
+    b:f64,
+    stride: f64,
+    pad:f64
 
-
+}
+impl Convolution {
+    fn forward() {}
 }
