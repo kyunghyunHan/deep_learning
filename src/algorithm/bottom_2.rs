@@ -1,10 +1,8 @@
 use super::weight;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
-use plotters::prelude::*;
 use polars::prelude::*;
 use rayon::prelude::*;
-use std::time::Instant;
 
 /*신경망
 입력층 - 은닉충 - 출력충
@@ -168,15 +166,15 @@ pub fn main() {
     println!("{}", sum_exp_a);
 
     let y = exp_a / sum_exp_a;
-    println!("{}", &y);
+    println!("y:{}", &y);
 
     //end
 
     //정리
-    let network = Network::init_network();
-    let x = arr1(&[1.0, 0.5]).into_dyn();
-    let y = Network::forward(network, x);
-    println!("여기:{}", y);
+    // let network = Network::init_network();
+    // let x = arr1(&[1.0, 0.5]).into_dyn();
+    // let y = Network::forward(network, x);
+    // println!("여기:{}", y);
     /*출력층
     분류= 소프트맥스
     회귀 = 항등함수
@@ -207,94 +205,55 @@ pub fn main() {
         "{}",
         (&a - c).mapv(|x| f64::exp(x)) / (&a - c).mapv(|x| f64::exp(x)).sum()
     );
-    
+
     let a = arr1(&[0.3, 2.9, 4.0]);
     let y = softmax(&a);
     println!("{}", y);
-    println!("sum:{}", y.sum());
+    println!("sum:{}", y.sum()); //총합 1
 
-    let w1_array: Vec<f64> = weight::w1::w1
-        .iter()
-        .flat_map(|row| row.iter())
-        .cloned()
-        .collect();
-    let w1 = ArrayView2::from_shape((784, 50), &w1_array)
-        .unwrap()
-        .to_owned();
+    /*Mnist
+    0~9까지의 숫자 이미지로 구성
+    - 데이터 6만장 시험이미지 10000장 구성
+    - 28x28 크기 ,각 픽셀은 0~255까지의 값을 취함
 
-    let w2_array: Vec<f64> = weight::w2::w2
-        .iter()
-        .flat_map(|row| row.iter())
-        .cloned()
-        .collect();
-    let w2 = ArrayView2::from_shape((50, 100), &w2_array)
-        .unwrap()
-        .to_owned();
 
-    let w3_array: Vec<f64> = weight::w3::w3
-        .iter()
-        .flat_map(|row| row.iter())
-        .cloned()
-        .collect();
-    let w3 = ArrayView2::from_shape((100, 10), &w3_array)
-        .unwrap()
-        .to_owned();
+    */
 
-    let b1 = weight::b1::b1;
-    let b2 = weight::b2::b2;
-    let b3 = weight::b3::b3;
+    //각 데이터 출력 형상
+    let mnist = Mnist::new();
+    let x_train = mnist.x_train;
+    let y_train = mnist.y_train;
+    let x_test = mnist.x_test;
+    let y_test = mnist.y_test;
 
-    let network = Network {
-        w1: w1.clone(),
-        w2: w2.clone(),
-        w3: w3.clone(),
-        b1: arr1(&b1),
-        b2: arr1(&b2),
-        b3: arr1(&b3),
-    };
-    let accuracy_cnt = 0;
-    let batch_size = 100;
+    println!("x_trian:{:?}", x_train.shape());
+    println!("y_train:{:?}", y_train.shape());
+    println!("x_test:{:?}", x_test.shape());
+    println!("y_test:{:?}", y_test.shape());
 
-    let x_test = Mnist::new().x_test;
-    let y_test = Mnist::new().y_test;
+    /*신경망의 추론
+    28*28 = 784
+    - 데이터를 특정 범위로 변환하는것을 정규화
+    - 신경망 입력데이터에 특정 변환을 가하는 것을 전처리
+    */
+    
 
-    // 2D     // for i  in 0..10000{
-    //     let y= Network::predict(network.clone(),  x_test.index_axis(Axis(0), i).to_owned().iter().map(|x|*x as f64).collect());
-    //     let p = y.argmax().unwrap();//확률이 가장 높은 원소의 인덱스를 얻는다
+    let network = Network::init_network();
+    println!("{:?}",network.w1.shape());
+    println!("{:?}",network.w2.shape());
+    println!("{:?}",network.w3.shape());
 
-    //     if p ==y_test[i] as usize{
-    //          accuracy_cnt+=1
-    //     }
-
-    // }
-    // println!("Accuracy:{}",accuracy_cnt as f64/10000 as f64);
-    //     let start_time = Instant::now();
-
-    //     for i in (0..10000).step_by(batch_size) {
-    //         let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
-    //         let y_batch = Network::predict(network.clone(), &x_batch);
-    //         let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
-    //         println!("{}",p);
-    //         accuracy_cnt += y_test
-    //         .slice(s![i..i + batch_size])
-    //         .iter()
-    //         .zip(p.iter())
-    //         .filter(|&(expected, predicted)| *expected == *predicted as i64)
-    //         .count();
-    //     }
-    //     let end_time = Instant::now();
-    // let elapsed_time = end_time - start_time;
-    // println!("Elapsed Time: {:?}", elapsed_time);
-    println!("Accuracy:{}", accuracy_cnt as f64 / 10000 as f64);
-    let start_time = Instant::now();
-
-    let accuracy_cnt: usize = (0..10000)
-        .into_par_iter()
+    let batch_size = 100;//배치크기
+    
+    let accuracy_cnt: usize = (0..x_test.shape()[0])
+        .into_par_iter() //병렬처리
         .step_by(batch_size)
         .map(|i| {
-            let x_batch: Array2<f64> = x_test.slice(s![i..i + batch_size, ..]).to_owned();
-            let y_batch = Network::predict(network.clone(), &x_batch);
-            let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());
+            let x_batch: Array2<f64> = x_test.clone().slice(s![i..i + batch_size, ..]).to_owned();
+            let y_batch = Network::predict(network.clone(), x_batch.into_dyn())
+                .into_dimensionality::<Ix2>()
+                .unwrap();
+            let p: Array1<usize> = y_batch.map_axis(Axis(1), |view| view.argmax().unwrap());//가장 높은 원소들의 인덱스 집합
             y_test
                 .slice(s![i..i + batch_size])
                 .iter()
@@ -303,15 +262,8 @@ pub fn main() {
                 .count()
         })
         .sum();
-    let end_time = Instant::now();
-    let elapsed_time = end_time - start_time;
-    println!("Elapsed Time: {:?}", elapsed_time);
 
     println!("Accuracy: {}", accuracy_cnt as f64 / 10000.0);
-
-    let a = arr1(&[0.3, 2.9, 4.0]);
-    let y = softmax(&a);
-    println!("{}", y);
 }
 /*===========activation function========= */
 
@@ -361,14 +313,52 @@ struct Network {
 }
 impl Network {
     fn init_network() -> Self {
+        let w1_array: Vec<f64> = weight::w1::w1
+            .iter()
+            .flat_map(|row| row.iter())
+            .cloned()
+            .collect();
+        let w1 = ArrayView2::from_shape((784, 50), &w1_array)
+            .unwrap()
+            .to_owned();
+
+        let w2_array: Vec<f64> = weight::w2::w2
+            .iter()
+            .flat_map(|row| row.iter())
+            .cloned()
+            .collect();
+        let w2 = ArrayView2::from_shape((50, 100), &w2_array)
+            .unwrap()
+            .to_owned();
+
+        let w3_array: Vec<f64> = weight::w3::w3
+            .iter()
+            .flat_map(|row| row.iter())
+            .cloned()
+            .collect();
+        let w3 = ArrayView2::from_shape((100, 10), &w3_array)
+            .unwrap()
+            .to_owned();
+
+        let b1 = arr1(&weight::b1::b1);
+        let b2 = arr1(&weight::b2::b2);
+        let b3 = arr1(&weight::b3::b3);
         Network {
-            w1: arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]),
-            w2: arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]),
-            w3: arr2(&[[0.1, 0.3], [0.2, 0.4]]),
-            b1: arr1(&[0.1, 0.2, 0.3]),
-            b2: arr1(&[0.1, 0.2]),
-            b3: arr1(&[0.1, 0.2]),
+            w1: w1,
+            w2: w2,
+            w3: w3,
+            b1: b1,
+            b2: b2,
+            b3: b3,
         }
+        // Network {
+        //     w1: arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]),
+        //     w2: arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]),
+        //     w3: arr2(&[[0.1, 0.3], [0.2, 0.4]]),
+        //     b1: arr1(&[0.1, 0.2, 0.3]),
+        //     b2: arr1(&[0.1, 0.2]),
+        //     b3: arr1(&[0.1, 0.2]),
+        // }
     }
     fn forward(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let rank = x.ndim();
@@ -379,10 +369,17 @@ impl Network {
             let network = Network::init_network();
             let (w1, w2, w3) = (network.w1, network.w2, network.w3);
             let (b1, b2, b3) = (network.b1, network.b2, network.b3);
+            println!("{:?}", w1.shape());
+            println!("{:?}", w2.shape());
+            println!("{:?}", w3.shape());
+            println!("{:?}", x.shape());
 
             let a1 = x.dot(&w1) + b1;
+            println!("{}", "여기");
+
             let z1 = a1.mapv(|x| sigmoid(x));
             let a2 = z1.dot(&w2) + b2;
+            println!("{}", "여기");
             let z2 = a2.mapv(|x| sigmoid(x));
             let a3 = z2.dot(&w3) + b3;
             y = a3.mapv(|x| identity_function(x)).into_dyn();
@@ -405,53 +402,44 @@ impl Network {
         }
         y
     }
-    // pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
-    //     println!("{}", 1);
-    //     let (w1, w2, w3) = (self.w1, self.w2, self.w3);
-    //     println!("{}", 2);
-
-    //     let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
-    //     println!("{}", 3);
-    //     println!("{:?}", x.shape());
-    //     println!("{:?}", w1.shape());
-    //     println!("{:?}", b1.shape());
-
-    //     let a1 = x.dot(&w1) + &b1;
-    //     println!("{}", 4);
-
-    //     let z1 = sigmoid(&a1);
-    //     let a2 = z1.dot(&w2) + &b2;
-    //     let z2 = sigmoid(&a2);
-    //     let a3 = z2.dot(&w3) + &b3;
-    //     let y = softmax(&a3);
-    //     println!("{}",y);
-    //     y
-    // }
-    fn predict(self, x: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array2<f64> {
+    fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let (w1, w2, w3) = (self.w1, self.w2, self.w3);
         let (b1, b2, b3) = (&self.b1, &self.b2, &self.b3);
+        let y: ArrayD<f64>;
+        let rank = x.ndim();
+        if rank == 1 {
+            let x = x.into_dimensionality::<Ix1>().unwrap();
+            let a1 = x.dot(&w1) + b1;
+            let z1 = a1.map(|&x| sigmoid(x));
+            let a2 = z1.dot(&w2) + b2;
+            let z2 = a2.map(|&x| sigmoid(x));
+            let a3 = z2.dot(&w3) + b3;
+            y = softmax(&a3).into_dyn();
+        } else if rank == 2 {
+            let x = x.into_dimensionality::<Ix2>().unwrap();
+            let a1 = x.dot(&w1) + b1;
+            let z1 = a1.map(|&x| sigmoid(x));
+            let a2 = z1.dot(&w2) + b2;
+            let z2 = a2.map(|&x| sigmoid(x));
+            let a3 = z2.dot(&w3) + b3;
+            let vec_of_vec: Vec<Vec<f64>> = a3
+                .axis_iter(Axis(0))
+                .map(|row| softmax(&row.to_owned()))
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|x| x.to_vec())
+                .collect();
+            let array_2d: Array2<f64> = Array2::from_shape_vec(
+                (a3.shape()[0], a3.shape()[1]),
+                vec_of_vec.into_iter().flatten().collect(),
+            )
+            .unwrap();
+            y = array_2d.into_dyn();
+        } else {
+            panic!("Unsupported rank: {}", rank);
+        }
 
-        let a1 = x.dot(&w1) + b1;
-        let z1 = a1.map(|&x| sigmoid(x));
-        let a2 = z1.dot(&w2) + b2;
-        let z2 = a2.map(|&x| sigmoid(x));
-        let a3 = z2.dot(&w3) + b3;
-
-        let vec_of_vec: Vec<Vec<f64>> = a3
-            .axis_iter(Axis(0))
-            .map(|row| softmax(&row.to_owned()))
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|x| x.to_vec())
-            .collect();
-        let array_2d: Array2<f64> = Array2::from_shape_vec(
-            (a3.shape()[0], a3.shape()[1]),
-            vec_of_vec.into_iter().flatten().collect(),
-        )
-        .unwrap();
-        array_2d
-
-        // let a2: Array2<f64> = arr2(&softmax_matrix.,into_iter().map(|arr| arr.to_vec()).collect::<Vec<f64>>());
+        y
     }
 }
 struct Mnist {
@@ -463,21 +451,26 @@ struct Mnist {
 
 impl Mnist {
     fn new() -> Self {
-        let train_df = CsvReader::from_path("./dataset/digit-recognizer/train.csv")
-            .unwrap()
-            .finish()
-            .unwrap();
-        let test_df = CsvReader::from_path("./dataset/mnist/x_test.csv")
+        let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
             .unwrap()
             .has_header(false)
             .finish()
             .unwrap();
-        let submission = CsvReader::from_path("./dataset/mnist/y_test.csv")
+        let x_test = CsvReader::from_path("./dataset/mnist/x_test.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap();
+        let y_test = CsvReader::from_path("./dataset/mnist/y_test.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let y_train = CsvReader::from_path("./dataset/mnist/y_train_1.csv")
             .unwrap()
             .finish()
             .unwrap();
         let y_train = arr1(
-            &train_df
+            &y_train
                 .column("label")
                 .unwrap()
                 .i64()
@@ -485,25 +478,21 @@ impl Mnist {
                 .into_no_null_iter()
                 .collect::<Vec<i64>>(),
         );
-        let x_train = train_df
-            .drop("label")
-            .unwrap()
+        let y_test = arr1(
+            &y_test
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+        let x_train = x_train
             .to_ndarray::<Int64Type>(IndexOrder::Fortran)
             .unwrap();
-
-        let x_test = test_df
+        let x_test = x_test
             .to_ndarray::<Float64Type>(IndexOrder::Fortran)
             .unwrap();
-
-        let y_test = arr1(
-            &submission
-                .column("label")
-                .unwrap()
-                .i64()
-                .unwrap()
-                .into_no_null_iter()
-                .collect::<Vec<i64>>(),
-        );
 
         Mnist {
             x_train,
