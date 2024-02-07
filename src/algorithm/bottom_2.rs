@@ -27,75 +27,15 @@ h(x)=입력신호의 총합을 출력신호로 변환하는 함수를  일반적
 왼쪽은 일반적이 뉴런 오른쪽은 활성화 처리 과정을 명시한 뉴런
 
 */
-struct Mnist {
-    x_train: Array2<i64>,
-    y_train: Array1<i64>,
-    x_test: Array2<f64>,
-    y_test: Array1<i64>,
-}
 
-impl Mnist {
-    fn new() -> Self {
-        let train_df = CsvReader::from_path("./dataset/digit-recognizer/train.csv")
-            .unwrap()
-            .finish()
-            .unwrap();
-        let test_df = CsvReader::from_path("./dataset/mnist/x_test.csv")
-            .unwrap()
-            .has_header(false)
-            .finish()
-            .unwrap();
-        let submission = CsvReader::from_path("./dataset/mnist/y_test.csv")
-            .unwrap()
-            .finish()
-            .unwrap();
-        let y_train = arr1(
-            &train_df
-                .column("label")
-                .unwrap()
-                .i64()
-                .unwrap()
-                .into_no_null_iter()
-                .collect::<Vec<i64>>(),
-        );
-        let x_train = train_df
-            .drop("label")
-            .unwrap()
-            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
-            .unwrap();
-
-        let x_test = test_df
-            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
-            .unwrap();
-
-        let y_test = arr1(
-            &submission
-                .column("label")
-                .unwrap()
-                .i64()
-                .unwrap()
-                .into_no_null_iter()
-                .collect::<Vec<i64>>(),
-        );
-
-        Mnist {
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-        }
-    }
-}
-
-/*
-def step_function(x):
-    x=x>0
-    return y.astype(np.int)
-
-*/
-
-/*========Main======== */
 pub fn main() {
+
+    /*sigmoid
+    exp(-x) e^-x를 뜻함 ,e는 자연상수 2.7182..의 값을 갖는 실수
+    신경망에서는 활성화  함수로 시그모이드 함수를 이용하여 신호를변환 그 변환된 신호를 다음 뉴런에 전달
+    
+    
+     */
     let x = arr1(&[-5.0, 5.0, 0.1]);
     let y = step_function(&x);
     /*계단함수 구현 */
@@ -480,13 +420,13 @@ impl Network {
 }
 /*===========activation function========= */
 
-// fn step_function(x: i32) -> i32 {
-//     if x > 0 {
-//         return 1;
-//     } else {
-//         return 0;
-//     }
-// }
+fn step(x: i32) -> i32 {
+    if x > 0 {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 fn step_function(x: &Array1<f64>) -> Array1<f64> {
     x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
 }
@@ -495,4 +435,63 @@ fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
     let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
     exp_a / sum_exp_a
+}
+struct Mnist {
+    x_train: Array2<i64>,
+    y_train: Array1<i64>,
+    x_test: Array2<f64>,
+    y_test: Array1<i64>,
+}
+
+impl Mnist {
+    fn new() -> Self {
+        let train_df = CsvReader::from_path("./dataset/digit-recognizer/train.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let test_df = CsvReader::from_path("./dataset/mnist/x_test.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap();
+        let submission = CsvReader::from_path("./dataset/mnist/y_test.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let y_train = arr1(
+            &train_df
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+        let x_train = train_df
+            .drop("label")
+            .unwrap()
+            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
+            .unwrap();
+
+        let x_test = test_df
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+
+        let y_test = arr1(
+            &submission
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+
+        Mnist {
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+        }
+    }
 }
