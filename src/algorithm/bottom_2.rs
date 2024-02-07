@@ -140,7 +140,7 @@ pub fn main() {
     let a1 = x.dot(&w1) + b1;
     println!("{:?}", a1.shape());
 
-    let z1 = sigmoid_function(&a1);
+    let z1 = a1.mapv(|x| sigmoid(x));
     println!("z1:{}", z1);
     //1층에서 2층으로 가는 과정
     let w2 = arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]);
@@ -158,7 +158,7 @@ pub fn main() {
 
     let a3 = z2.dot(&w3) + b3;
 
-    let y = idenity_function(&a3);
+    let y = a3.mapv(|x| identity_function(x));
 
     /*항등함수와 소프트맥스 함수 구현 */
     let a = arr1(&[0.3, 2.9, 4.0]);
@@ -172,11 +172,33 @@ pub fn main() {
 
     //end
 
+    //정리
+    let network = Network::init_network();
+    let x = arr1(&[1.0, 0.5]).into_dyn();
+    let y = Network::forward(network, x);
+    println!("여기:{}", y);
+    /*출력층
+    분류= 소프트맥스
+    회귀 = 항등함수
+
+    항등함수는 입력그대로
+    입력신호ak의 지수함수 분모믐 모든입력신호의 지수함수의 합으로 구성
+    */
     //소프트맥스
-    let a = arr1(&[1010.0, 1000.0, 990.0]);
+    let a = arr1(&[0.3, 2.9, 4.0]);
     let exp_a = a.mapv(|x| f64::exp(x));
-    let exp_a_sum = exp_a.sum();
-    println!("{}", exp_a / exp_a_sum); //Nan,Nan,Nan
+    println!("exp_a:{}", exp_a);
+    let exp_a_sum = exp_a.sum(); //지수 합
+    println!("exp_a_sum{}", exp_a_sum);
+    let y = exp_a / sum_exp_a;
+    println!("exp{}", y);
+
+    //소프트맥스 문제
+    let a = arr1(&[1010.0, 1000.0, 990.0]);
+    println!(
+        "{}",
+        a.mapv(|x| f64::exp(x)) / a.mapv(|x| f64::exp(x)).sum()
+    ); //계산 x
 
     let c: f64 = a[a.argmax().unwrap()];
     println!("{}", &a - c);
@@ -185,11 +207,11 @@ pub fn main() {
         "{}",
         (&a - c).mapv(|x| f64::exp(x)) / (&a - c).mapv(|x| f64::exp(x)).sum()
     );
-
+    
     let a = arr1(&[0.3, 2.9, 4.0]);
-    // let y = softmax(&a);
+    let y = softmax(&a);
     println!("{}", y);
-    println!("{}", y.sum());
+    println!("sum:{}", y.sum());
 
     let w1_array: Vec<f64> = weight::w1::w1
         .iter()
@@ -317,13 +339,13 @@ fn relu_function(x: &Array1<f64>) -> Array1<f64> {
 }
 fn softmax(a: &Array1<f64>) -> Array1<f64> {
     let c: f64 = a[a.argmax().unwrap()];
-    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
-    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
+    let exp_a = a.mapv(|x| (x - c).exp());
+    let sum_exp_a = exp_a.sum();
     exp_a / sum_exp_a
 }
 /*항동함수 */
 
-fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
+fn identity_function(x: f64) -> f64 {
     return x.clone();
 }
 /*===========organize========= */
@@ -348,12 +370,40 @@ impl Network {
             b3: arr1(&[0.1, 0.2]),
         }
     }
-    fn forward(self,x:Array2<f64>) {
-        let network = Network::init_network();
-        let (w1,w2,w3)= (network.w1,network.w2,network.w3);
-        let (b1,b2,b3)= (network.b1,network.b2,network.b3);
+    fn forward(self, x: ArrayD<f64>) -> ArrayD<f64> {
+        let rank = x.ndim();
+        let y: ArrayD<f64>;
+        if rank == 1 {
+            let x = x.into_dimensionality::<Ix1>().unwrap();
 
-        let a1= x.dot(&w1)+b1;
+            let network = Network::init_network();
+            let (w1, w2, w3) = (network.w1, network.w2, network.w3);
+            let (b1, b2, b3) = (network.b1, network.b2, network.b3);
+
+            let a1 = x.dot(&w1) + b1;
+            let z1 = a1.mapv(|x| sigmoid(x));
+            let a2 = z1.dot(&w2) + b2;
+            let z2 = a2.mapv(|x| sigmoid(x));
+            let a3 = z2.dot(&w3) + b3;
+            y = a3.mapv(|x| identity_function(x)).into_dyn();
+        } else if rank == 2 {
+            let x = x.into_dimensionality::<Ix2>().unwrap();
+
+            let network = Network::init_network();
+            let (w1, w2, w3) = (network.w1, network.w2, network.w3);
+            let (b1, b2, b3) = (network.b1, network.b2, network.b3);
+
+            let a1 = x.dot(&w1) + b1;
+            let z1 = a1.mapv(|x| sigmoid(x));
+            let a2 = z1.dot(&w2) + b2;
+            let z2 = a2.mapv(|x| sigmoid(x));
+            let a3 = z2.dot(&w3) + b3;
+            y = a3.mapv(|x| identity_function(x)).into_dyn();
+        } else {
+            // Handle the case when rank is not 1 or 2
+            panic!("Unsupported rank: {}", rank);
+        }
+        y
     }
     // pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
     //     println!("{}", 1);
