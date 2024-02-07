@@ -6,14 +6,14 @@ use polars::prelude::*;
 use rayon::prelude::*;
 use std::time::Instant;
 
-/*신경망 
+/*신경망
 입력층 - 은닉충 - 출력충
 
 x1과 x2라는 두신호를 입력받아 y를 출력하는 퍼셉트론
 
 
 b=편향
-w1,w2=가중치 
+w1,w2=가중치
 
 편향을 표시한다면?=>그림
 가중치가 b이고 입력이 1인 뉴런이 추가, 이퍼셉트론의 동작은 각 신호들에 가중치를 곱한 후 다음뉴런에 전달 그합이 0이 넘으면 1을 출력,그렇지 않으면 0을 출력
@@ -29,126 +29,70 @@ h(x)=입력신호의 총합을 출력신호로 변환하는 함수를  일반적
 */
 
 pub fn main() {
-
     /*sigmoid
     exp(-x) e^-x를 뜻함 ,e는 자연상수 2.7182..의 값을 갖는 실수
     신경망에서는 활성화  함수로 시그모이드 함수를 이용하여 신호를변환 그 변환된 신호를 다음 뉴런에 전달
-    
-    
+
+
      */
-    let x = arr1(&[-5.0, 5.0, 0.1]);
-    let y = step_function(&x);
-    /*계단함수 구현 */
-    let x = Array::range(-5.0, 5., 0.1);
-    let y = step_function(&x);
+    /*계단 함수
+    0을 경계로 출력이 0보다 작으면 0 크면 1
+     */
+    let x = step_function(&arr1(&[-1.0, 1.0, 2.0]));
+    println!("Step Function :{}", step_function(&arr1(&[-1.0, 1.0, 2.0])));
 
-    // 그래프 그리기
-    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
-        BitMapBackend::new("step_function.png", (800, 600)).into_drawing_area();
-    root.fill(&WHITE).unwrap();
-    //x축 -6.0 부터 6까지
-    //y축 -0.1부터 1.1까지
-    let mut chart = ChartBuilder::on(&root)
-        .caption("step_function", ("sans-serif", 50))
-        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-        .unwrap();
+    /*시그모이드
+    계단 함수가 0 또는 1만 반환하느 반면  시그모이드는 실수를 돌려돌려줍니다  퍼셉트론에서는 뉴런사이에 1 or 0 이 흘럿다면 신경망에서는 연속적인 실수가 흐름
+    */
 
-    chart.configure_mesh().draw().unwrap();
-    chart
-        .draw_series(LineSeries::new(
-            x.iter().cloned().zip(y.iter().cloned()),
-            &BLUE,
-        ))
-        .unwrap();
+    /*비선형 함수
+    시그모이드는 함수는 곡선,계단함수는 계단처럼 구부러진직선으로 동시에 비선형으로 구분
+    신경망에서는 활성화 함수로 비선형함수를 사용
 
-    /*시그모이드 함수 구현*/
-    let x = Array1::from(vec![-1.0, 1.0, 2.0]);
-    // println!("{}", sigmoid(&x));
+    선형함수를 이용하면 신경망의 층을 깊게 하는 의미가 없음
+    층을 아무리 깊게해도 은닉충이 없는 네트워크로도 똑같은 기능을 수행할수 있음
+     */
+    let x = sigmoid_function(&arr1(&[-1.0, 1.0, 2.0]));
+    println!("Sigmoid Function :{}", x);
 
-    let t = arr1(&[1.0, 2.0, 3.0]);
-    println!("{}", 1.0 + &t);
+    /*ReLU
+    최근에는 시그모이드보다 ReLU를 주로 이용
+    0을 넘으면 그입력을 그대로 출력,0이하면 0을 출력
+    */
+    let x = relu_function(&arr1(&[-1.0, 1.0, 2.0]));
+    println!("ReLU Function :{}", x);
 
-    println!("{}", 1.0 / &t);
-
-    let x = Array::range(-5.0, 5., 0.1);
-    // let y: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = sigmoid(&x);
-
-    // 그래프 그리기
-    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
-        BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
-    root.fill(&WHITE).unwrap();
-    //x축 -6.0 부터 6까지
-    //y축 -0.1부터 1.1까지
-    let mut chart = ChartBuilder::on(&root)
-        .caption("sigmoid", ("sans-serif", 50))
-        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-        .unwrap();
-
-    chart.configure_mesh().draw().unwrap();
-    chart
-        .draw_series(LineSeries::new(
-            x.iter().cloned().zip(y.iter().cloned()),
-            &BLUE,
-        ))
-        .unwrap();
-    chart
-        .draw_series(LineSeries::new(
-            x.iter().cloned().zip(y.iter().cloned()),
-            &BLUE,
-        ))
-        .unwrap();
-
-    /*계단 함수와 비교 */
-
-    let y2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = step_function(&x);
-
-    // 그래프 그리기
-    let root: DrawingArea<BitMapBackend<'_>, plotters::coord::Shift> =
-        BitMapBackend::new("sigmoid_function.png", (800, 600)).into_drawing_area();
-    root.fill(&WHITE).unwrap();
-    //x축 -6.0 부터 6까지
-    //y축 -0.1부터 1.1까지
-    let mut chart = ChartBuilder::on(&root)
-        .caption("sigmoid", ("sans-serif", 50))
-        .build_cartesian_2d(-6.0..6.0, -0.1..1.1)
-        .unwrap();
-
-    chart.configure_mesh().draw().unwrap();
-    chart
-        .draw_series(LineSeries::new(
-            x.iter().cloned().zip(y.iter().cloned()),
-            &BLUE,
-        ))
-        .unwrap();
-    chart
-        .draw_series(LineSeries::new(
-            x.iter().cloned().zip(y2.iter().cloned()),
-            &RED,
-        ))
-        .unwrap();
-
-    /*다차원 배열 */
+    /*다차원 배열
+    1차원 텐서 = 벡터
+    2차원 텐서 =행렬
+    3차원 텐서 =텐서
+    딥러닝에서는 보통 5차원 텐서까지 다룸
+     */
     let a = arr1(&[1, 2, 3, 4]);
     print!("{}", a);
-
     //차원의 수 확인
     a.ndim();
     //형상:원소 개로 구성
     a.shape();
-
+    //2차원
     let b = arr2(&[[1, 2], [3, 4], [5, 6]]);
     println!("{}", b);
     b.ndim();
     b.shape();
 
-    /*행렬의 곱*/
+    /*행렬의 곱
+    왼쪽행렬의 행과 오른쪽행렬의 세로를 원소별로 곱하고 더해서 계산
+    dot을 통해 계산
+    a.dot(b) 와 b.dot(a)는 다른값
+    행렬의 형상 행렬 a의 차원의 열수와 행렬b의 행수가 같아야합니다
+    */
     let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2], [3, 4]]);
     println!("{:?}", a.shape());
 
     let b = arr2(&[[5, 6], [7, 8]]);
     println!("{:?}", b.shape());
 
-    println!("{}", a.dot(&b));
+    println!("2x2:{}", a.dot(&b));
 
     let a: ArrayBase<ndarray::OwnedRepr<i32>, Dim<[usize; 2]>> = arr2(&[[1, 2, 3], [4, 5, 6]]);
     println!("{:?}", a.shape());
@@ -171,7 +115,10 @@ pub fn main() {
     println!("{:?}", b.shape());
     println!("{}", a.dot(&b));
 
-    /*신경망 행렬곱 */
+    /*신경망 행렬곱
+
+    편향과 활성화 함수 생략하고 가중치만 가지고
+     */
     let x = arr1(&[1, 2]);
     println!("{:?}", x.shape());
 
@@ -186,33 +133,32 @@ pub fn main() {
     let w1 = arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]);
     let b1: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = arr1(&[0.1, 0.2, 0.3]);
 
-    println!("{:?}", w1.shape());
-    println!("{:?}", x.shape());
-    println!("{:?}", b1.shape());
+    println!("{:?}", w1.shape()); //[2,3]
+    println!("{:?}", x.shape()); //[2]
+    println!("{:?}", b1.shape()); //[3]
 
     let a1 = x.dot(&w1) + b1;
     println!("{:?}", a1.shape());
 
-    // let z1 = sigmoid(&a1);
-    println!("{}", a1);
-    // println!("{}", z1);
-
+    let z1 = sigmoid_function(&a1);
+    println!("z1:{}", z1);
+    //1층에서 2층으로 가는 과정
     let w2 = arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]);
     let b2 = arr1(&[0.1, 0.2]);
 
-    // println!("{:?}", z1.shape());
-    println!("{:?}", w2.shape());
-    println!("{:?}", b2.shape());
+    println!("z1:{:?}", z1.shape()); //3
+    println!("w2:{:?}", w2.shape()); //3,2
+    println!("b2:{:?}", b2.shape()); //2
 
-    // let a2 = z1.dot(&w2) + b2;
-    // let z2 = sigmoid(&a2);
+    let a2 = z1.dot(&w2) + b2;
+    let z2 = sigmoid_function(&a2);
 
     let w3 = arr2(&[[0.1, 0.3], [0.2, 0.4]]);
     let b3 = arr1(&[0.1, 0.2]);
 
-    // let a3 = z2.dot(&w3) + b3;
+    let a3 = z2.dot(&w3) + b3;
 
-    let y = idenity_function(&x);
+    let y = idenity_function(&a3);
 
     /*항등함수와 소프트맥스 함수 구현 */
     let a = arr1(&[0.3, 2.9, 4.0]);
@@ -223,6 +169,8 @@ pub fn main() {
 
     let y = exp_a / sum_exp_a;
     println!("{}", &y);
+
+    //end
 
     //소프트맥스
     let a = arr1(&[1010.0, 1000.0, 990.0]);
@@ -270,20 +218,20 @@ pub fn main() {
         .unwrap()
         .to_owned();
 
-    let b1 = weight::b1::b1.to_vec();
-    let b2 = weight::b2::b2.to_vec();
-    let b3 = weight::b3::b3.to_vec();
+    let b1 = weight::b1::b1;
+    let b2 = weight::b2::b2;
+    let b3 = weight::b3::b3;
 
     let network = Network {
         w1: w1.clone(),
         w2: w2.clone(),
         w3: w3.clone(),
-        b1: b1.clone(),
-        b2: b2.clone(),
-        b3: b3.clone(),
+        b1: arr1(&b1),
+        b2: arr1(&b2),
+        b3: arr1(&b3),
     };
-    let   accuracy_cnt = 0;
-    let  batch_size = 100;
+    let accuracy_cnt = 0;
+    let batch_size = 100;
 
     let x_test = Mnist::new().x_test;
     let y_test = Mnist::new().y_test;
@@ -343,32 +291,70 @@ pub fn main() {
     let y = softmax(&a);
     println!("{}", y);
 }
+/*===========activation function========= */
+
+fn step(x: i32) -> i32 {
+    if x > 0 {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+fn step_function(x: &Array1<f64>) -> Array1<f64> {
+    x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
+}
+
 //시그모이드
 fn sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-x).exp())
 }
 
-/*ReLU */
-
-fn relu(x: &Array1<f64>) -> Array1<f64> {
+fn sigmoid_function(x: &Array1<f64>) -> Array1<f64> {
+    x.mapv(|x| 1.0 / (1.0 + (-x).exp()))
+}
+fn relu_function(x: &Array1<f64>) -> Array1<f64> {
     x.mapv(|element| if element > 0.0 { element } else { 0.0 })
 }
-
+fn softmax(a: &Array1<f64>) -> Array1<f64> {
+    let c: f64 = a[a.argmax().unwrap()];
+    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
+    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
+    exp_a / sum_exp_a
+}
 /*항동함수 */
 
 fn idenity_function(x: &Array1<f64>) -> Array1<f64> {
     return x.clone();
 }
+/*===========organize========= */
+
 #[derive(Clone)]
 struct Network {
     w1: Array2<f64>,
     w2: Array2<f64>,
     w3: Array2<f64>,
-    b1: Vec<f64>,
-    b2: Vec<f64>,
-    b3: Vec<f64>,
+    b1: Array1<f64>,
+    b2: Array1<f64>,
+    b3: Array1<f64>,
 }
 impl Network {
+    fn init_network() -> Self {
+        Network {
+            w1: arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]),
+            w2: arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]),
+            w3: arr2(&[[0.1, 0.3], [0.2, 0.4]]),
+            b1: arr1(&[0.1, 0.2, 0.3]),
+            b2: arr1(&[0.1, 0.2]),
+            b3: arr1(&[0.1, 0.2]),
+        }
+    }
+    fn forward(self,x:Array2<f64>) {
+        let network = Network::init_network();
+        let (w1,w2,w3)= (network.w1,network.w2,network.w3);
+        let (b1,b2,b3)= (network.b1,network.b2,network.b3);
+
+        let a1= x.dot(&w1)+b1;
+    }
     // pub fn predict(self, x: Array1<f64>) -> Array1<f64> {
     //     println!("{}", 1);
     //     let (w1, w2, w3) = (self.w1, self.w2, self.w3);
@@ -393,7 +379,7 @@ impl Network {
     // }
     fn predict(self, x: &Array<f64, ndarray::Dim<[usize; 2]>>) -> Array2<f64> {
         let (w1, w2, w3) = (self.w1, self.w2, self.w3);
-        let (b1, b2, b3) = (arr1(&self.b1), arr1(&self.b2), arr1(&self.b3));
+        let (b1, b2, b3) = (&self.b1, &self.b2, &self.b3);
 
         let a1 = x.dot(&w1) + b1;
         let z1 = a1.map(|&x| sigmoid(x));
@@ -417,24 +403,6 @@ impl Network {
 
         // let a2: Array2<f64> = arr2(&softmax_matrix.,into_iter().map(|arr| arr.to_vec()).collect::<Vec<f64>>());
     }
-}
-/*===========activation function========= */
-
-fn step(x: i32) -> i32 {
-    if x > 0 {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-fn step_function(x: &Array1<f64>) -> Array1<f64> {
-    x.map(|&val| if val > 0.0 { 1.0 } else { 0.0 })
-}
-fn softmax(a: &Array1<f64>) -> Array1<f64> {
-    let c: f64 = a[a.argmax().unwrap()];
-    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
-    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
-    exp_a / sum_exp_a
 }
 struct Mnist {
     x_train: Array2<i64>,
