@@ -13,53 +13,69 @@ pub fn main() {
     - 일반적으로  오차제곱합과 교차 엔트로피 오차 사용
      */
     // 오차제곱합
-    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]);//소프트 맥스 함수의 출력
+    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
     let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     //0일 확률 0.1,1일 확률 0.05, 1은 정답 레이블의 위치를 가르치는 원소 1 그외에는 0으로 표 기 => 원핫인코딩
-
-    println!("{}", sum_squares_error(&y, &t));
-    println!("{}", cross_entropy_error(&y, &t));
-    let x_train = Mnist::load_mnist().x_train;
-    let y_train = Mnist::load_mnist().y_train;
-    println!("{:?}", x_train.shape());
-    println!("{:?}", y_train.shape());
-
-    let train_size = x_train.shape()[0];
-    let batch_size = 10;
-    let batch_mask = random_choice(train_size, batch_size);
-    let x_batch = x_train.select(Axis(0), &batch_mask);
-    let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
-        y_train.select(Axis(0), &batch_mask);
-
-    println!("{:?}", random_choice(60000, 10));
-    println!("{:?}", cross_entropy_error_arr2(&y_train, &x_train));
-    let x1 = Array1::range(0.0, 20.0, 0.1);
-    let y1 = x1.map(|&elem| function_1(elem));
-    println!("{:?}", y1);
-    println!("{}", numerical_diff(function_tmp1, 5.0)); //0
-    println!("{}", numerical_diff(function_tmp1, 3.0));
-    println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
-
-    let init_x = arr1(&[-3.0, 4.0]);
-    println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
+    // y= 2일 확률이 제일 높다고 판단함
+    println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    //0.09750000000000003
+    let y = arr1(&[0.1, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.6, 0.0, 0.0]); //소프트 맥스 함수의 출력
+    println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    //0.5974999999999999 =? 7이 가장 높다고 추정함=>
+    /*교차 엔트로피 오차 */
     println!(
-        "학습률이 너무 큰 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
+        "교차 엔트로피:{}",
+        cross_entropy_error(&y.into_dyn(), &t.clone().into_dyn())
     );
+    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
     println!(
-        "학습률이 너무 작은 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
-    );
-    let simple = SimpleNet { w: arr2(&[[0.0]]) };
-    let net = SimpleNet::_init_(simple);
-    println!("{:?}", net);
+        "교차 엔트로피:{}",
+        cross_entropy_error(&y.into_dyn(), &t.clone().into_dyn())
+    ); //=>오차제곱합 와 일치
 
-    let x = arr1(&[0.6, 0.9]);
-    let p = net.clone().arr1_predict(x.clone());
-    println!("{:?}", p);
-    println!("{}", p.argmax().unwrap());
-    let t = arr1(&[0f64, 0f64, 1f64]);
-    println!("{:?}", SimpleNet::arr1_loss(net.clone(), x.clone(), t));
+    // let x_train = Mnist::load_mnist().x_train;
+    // let y_train = Mnist::load_mnist().y_train;
+    // println!("X train Shape{:?}", x_train.shape()); //60000,784
+    // println!("Y train Shape{:?}", y_train.shape()); //60000 10
+
+    // let train_size = x_train.shape()[0]; //trian_size
+    // let batch_size = 10;
+    // let batch_mask = random_choice(train_size, batch_size); //무작위로 원하는 개수만 꺼내기 =>무작위로 10개씩
+    // println!("무작위{:?}", batch_mask);
+    // let x_batch = x_train.select(Axis(0), &batch_mask);
+    // println!("x_batch:{}", x_batch);
+    // let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
+    //     y_train.select(Axis(0), &batch_mask);
+    // println!("y_train::{}", y_batch);
+    // println!("{:?}", random_choice(60000, 10));
+    // println!("{:?}", cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn()));
+    // let x1 = Array1::range(0.0, 20.0, 0.1);
+    // let y1 = x1.map(|&elem| function_1(elem));
+    // println!("{:?}", y1);
+    // println!("{}", numerical_diff(function_tmp1, 5.0)); //0
+    // println!("{}", numerical_diff(function_tmp1, 3.0));
+    // println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
+
+    // let init_x = arr1(&[-3.0, 4.0]);
+    // println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
+    // println!(
+    //     "학습률이 너무 큰 예{}",
+    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
+    // );
+    // println!(
+    //     "학습률이 너무 작은 예{}",
+    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
+    // );
+    // let simple = SimpleNet { w: arr2(&[[0.0]]) };
+    // let net = SimpleNet::_init_(simple);
+    // println!("{:?}", net);
+
+    // let x = arr1(&[0.6, 0.9]);
+    // let p = net.clone().arr1_predict(x.clone());
+    // println!("{:?}", p);
+    // println!("{}", p.argmax().unwrap());
+    // let t = arr1(&[0f64, 0f64, 1f64]);
+    // println!("{:?}", SimpleNet::arr1_loss(net.clone(), x.clone(), t));
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -70,37 +86,51 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
         .sum::<f64>();
     0.5 * squared_diff
 }
+fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
+    let rank = y.ndim();
+    if rank == 1 {
+        let t = t
+            .clone()
+            .into_dimensionality::<Ix1>()
+            .unwrap()
+            .into_shape((1, t.len()))
+            .unwrap();
+        let y = y
+            .clone()
+            .into_dimensionality::<Ix1>()
+            .unwrap()
+            .into_shape((1, y.len()))
+            .unwrap();
 
-fn cross_entropy_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
-    let delta = 1e-7;
-    let y = y.map(|&y_i| y_i + delta);
+        let delta = 1e-7;
+        let y = y.map(|&y_i| y_i + delta);
 
-    let log_y = y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln());
+        let log_y = y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln());
 
-    let neg_sum_log_y: f64 = log_y.map(|x| -x).sum();
+        let neg_sum_log_y: f64 = log_y.map(|x| -x).sum();
 
-    neg_sum_log_y
-}
-fn cross_entropy_error_arr2(y: &Array2<f64>, t: &Array2<f64>) -> f64 {
-    if y.ndim() == 1 {
-        let t = t.clone().into_shape((1, t.len())).unwrap();
-        let y = y.clone().into_shape((1, y.len())).unwrap();
-
-        let batch_size = y.shape()[0];
-        return -y
-            .iter()
-            .zip(t.iter())
-            .map(|(&y_i, &t_i)| t_i * y_i.ln())
-            .sum::<f64>()
-            / batch_size as f64;
+        neg_sum_log_y
     } else {
-        let batch_size = y.shape()[0];
-        return -y
-            .iter()
-            .zip(t.iter())
-            .map(|(&y_i, &t_i)| t_i * y_i.ln())
-            .sum::<f64>()
-            / batch_size as f64;
+        let t = t
+            .clone()
+            .into_dimensionality::<Ix2>()
+            .unwrap()
+            .into_shape((1, t.len()))
+            .unwrap();
+        let y = y
+            .clone()
+            .into_dimensionality::<Ix2>()
+            .unwrap()
+            .into_shape((1, y.len()))
+            .unwrap();
+        let delta = 1e-7;
+        let y = y + delta;
+
+        let log_y = t * &y.mapv(f64::ln);
+
+        let neg_sum_log_y: f64 = -log_y.sum_axis(Axis(1)).sum();
+
+        neg_sum_log_y
     }
 }
 /* */
@@ -234,15 +264,14 @@ impl SimpleNet {
             vec_of_vec.into_iter().flatten().collect(),
         )
         .unwrap();
-        let loss = cross_entropy_error_arr2(&y, &t);
+        let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
 
         loss
     }
     fn arr1_loss(self, x: Array1<f64>, t: Array1<f64>) -> f64 {
         let z = self.arr1_predict(x);
         let y = softmax(&z.to_owned());
-        let loss = cross_entropy_error(&y, &t);
-
+        let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
         loss
     }
 }
@@ -314,7 +343,7 @@ impl TwoLayerNet {
 
     pub fn loss(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
         let y = self.predict(x);
-        cross_entropy_error_arr2(&y, &t)
+        cross_entropy_error(&y.into_dyn(), &t.into_dyn())
     }
     fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
         let y = self.predict(x.clone());
