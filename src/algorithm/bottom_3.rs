@@ -33,49 +33,49 @@ pub fn main() {
         cross_entropy_error(&y.into_dyn(), &t.clone().into_dyn())
     ); //=>오차제곱합 와 일치
 
-    // let x_train = Mnist::load_mnist().x_train;
-    // let y_train = Mnist::load_mnist().y_train;
-    // println!("X train Shape{:?}", x_train.shape()); //60000,784
-    // println!("Y train Shape{:?}", y_train.shape()); //60000 10
+    let x_train = Mnist::load_mnist().x_train;
+    let y_train = Mnist::load_mnist().y_train;
+    println!("X train Shape{:?}", x_train.shape()); //60000,784
+    println!("Y train Shape{:?}", y_train.shape()); //60000 10
 
-    // let train_size = x_train.shape()[0]; //trian_size
-    // let batch_size = 10;
-    // let batch_mask = random_choice(train_size, batch_size); //무작위로 원하는 개수만 꺼내기 =>무작위로 10개씩
-    // println!("무작위{:?}", batch_mask);
-    // let x_batch = x_train.select(Axis(0), &batch_mask);
-    // println!("x_batch:{}", x_batch);
-    // let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
-    //     y_train.select(Axis(0), &batch_mask);
-    // println!("y_train::{}", y_batch);
-    // println!("{:?}", random_choice(60000, 10));
-    // println!("{:?}", cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn()));
-    // let x1 = Array1::range(0.0, 20.0, 0.1);
-    // let y1 = x1.map(|&elem| function_1(elem));
-    // println!("{:?}", y1);
-    // println!("{}", numerical_diff(function_tmp1, 5.0)); //0
-    // println!("{}", numerical_diff(function_tmp1, 3.0));
-    // println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
+    let train_size = x_train.shape()[0]; //trian_size
+    let batch_size = 10;
+    let batch_mask = random_choice(train_size, batch_size); //무작위로 원하는 개수만 꺼내기 =>무작위로 10개씩
+    println!("무작위{:?}", batch_mask);
+    let x_batch = x_train.select(Axis(0), &batch_mask);
+    println!("x_batch:{}", x_batch);
+    let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
+        y_train.select(Axis(0), &batch_mask);
+    println!("y_train::{}", y_batch);
+    println!("{:?}", random_choice(60000, 10));
+    println!("{:?}", cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn()));
+    let x1 = Array1::range(0.0, 20.0, 0.1);
+    let y1 = x1.map(|&elem| function_1(elem));
+    println!("{:?}", y1);
+    println!("{}", numerical_diff(function_tmp1, 5.0)); //0
+    println!("{}", numerical_diff(function_tmp1, 3.0));
+    println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
 
-    // let init_x = arr1(&[-3.0, 4.0]);
-    // println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
-    // println!(
-    //     "학습률이 너무 큰 예{}",
-    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
-    // );
-    // println!(
-    //     "학습률이 너무 작은 예{}",
-    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
-    // );
-    // let simple = SimpleNet { w: arr2(&[[0.0]]) };
-    // let net = SimpleNet::_init_(simple);
-    // println!("{:?}", net);
+    let init_x = arr1(&[-3.0, 4.0]);
+    println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
+    println!(
+        "학습률이 너무 큰 예{}",
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
+    );
+    println!(
+        "학습률이 너무 작은 예{}",
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
+    );
+    let simple = SimpleNet { w: arr2(&[[0.0]]) };
+    let net = SimpleNet::_init_(simple);
+    println!("{:?}", net);
 
-    // let x = arr1(&[0.6, 0.9]);
-    // let p = net.clone().arr1_predict(x.clone());
-    // println!("{:?}", p);
-    // println!("{}", p.argmax().unwrap());
-    // let t = arr1(&[0f64, 0f64, 1f64]);
-    // println!("{:?}", SimpleNet::arr1_loss(net.clone(), x.clone(), t));
+    let x = arr1(&[0.6, 0.9]);
+    let p = net.clone().arr1_predict(x.clone());
+    println!("{:?}", p);
+    println!("{}", p.argmax().unwrap());
+    let t = arr1(&[0f64, 0f64, 1f64]);
+    println!("{:?}", SimpleNet::arr1_loss(net.clone(), x.clone(), t));
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -142,7 +142,7 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
                 -y_row
                     .iter()
                     .zip(t_row.iter())
-                    .map(|(&y_i, &t_i)| t_i * y_i.ln())
+                    .map(|(&y_i, &t_i)| t_i * (y_i + delta).ln())
                     .sum::<f64>()
             })
             .sum();
