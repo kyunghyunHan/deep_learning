@@ -48,23 +48,29 @@ pub fn main() {
         y_train.select(Axis(0), &batch_mask);
     println!("y_train::{}", y_batch);
     println!("{:?}", random_choice(60000, 10));
-    println!("{:?}", cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn()));
+    println!(
+        "{:?}",
+        cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
+    );
     let x1 = Array1::range(0.0, 20.0, 0.1);
     let y1 = x1.map(|&elem| function_1(elem));
     println!("{:?}", y1);
     println!("{}", numerical_diff(function_tmp1, 5.0)); //0
     println!("{}", numerical_diff(function_tmp1, 3.0));
-    println!("{}", numerical_gradient(function_2, arr1(&[3.0, 0.0])));
+    println!(
+        "{}",
+        numerical_gradient(function_2, arr1(&[3.0, 0.0]).into_dyn())
+    );
 
     let init_x = arr1(&[-3.0, 4.0]);
-    println!("{}", gradient_descent(function_2, init_x, 0.1, 100));
+    println!("{}", gradient_descent(function_2, init_x.into_dyn(), 0.1, 100));
     println!(
         "학습률이 너무 큰 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 10.0, 100)
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 10.0, 100)
     );
     println!(
         "학습률이 너무 작은 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]), 1e-10, 100)
+        gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 1e-10, 100)
     );
     let simple = SimpleNet { w: arr2(&[[0.0]]) };
     let net = SimpleNet::_init_(simple);
@@ -162,8 +168,14 @@ fn random_choice(train_size: usize, batch_size: usize) -> Vec<usize> {
 fn function_1(x: f64) -> f64 {
     0.01 * x.powf(2.0) + 0.1 * x
 }
-fn function_2(x: Array1<f64>) -> f64 {
-    x[0].powf(2.0) + x[1].powf(2.0)
+fn function_2(x: ArrayD<f64>) -> f64 {
+    let rank = x.ndim();
+    if rank == 1 {
+        let x = x.into_dimensionality::<Ix1>().unwrap();
+        return x[0].powf(2.0) + x[1].powf(2.0)
+    }else{
+        panic!("erorr이지")
+    }
 }
 
 /*편미분 */
@@ -179,61 +191,63 @@ where
     return (f(x + h) - f(x - h)) / (2.0 * h);
 }
 
-fn numerical_gradient<F>(f: F, x: Array1<f64>) -> Array1<f64>
-where
-    F: Fn(Array1<f64>) -> f64,
-{
-    let mut x_clone = x.clone(); // Clone x before entering the loop
-    let h = 1e-4;
-    let mut grad: Array1<f64> = Array::zeros(x.raw_dim());
-    for idx in 0..x.len() {
-        let tmp_val = x_clone[idx];
-        //f(x+h)계산
-        x_clone[idx] = tmp_val + h;
-        let fxh1 = f(x_clone.clone());
-
-        //f(x-h)계산
-        x_clone[idx] = tmp_val - h;
-        let fxh2 = f(x_clone.clone());
-
-        grad[idx] = (fxh1 - fxh2) / (2.0 * h);
-        x_clone[idx] = tmp_val;
-    }
-
-    grad
-}
 use ndarray::{Array1, Array2, Axis};
 
-fn numerical_gradient2<F>(f: F, x: Array2<f64>) -> Array2<f64>
+fn numerical_gradient<F>(f: F, x: ArrayD<f64>) -> ArrayD<f64>
 where
-    F: Fn(Array2<f64>) -> f64,
+    F: Fn(ArrayD<f64>) -> f64,
 {
+    let rank = x.ndim(); //rank설정
     let h = 1e-4;
-    let mut grad = Array2::zeros(x.raw_dim());
-    for (idx, mut row) in x.clone().axis_iter_mut(Axis(0)).enumerate() {
-        for (j, val) in row.iter_mut().enumerate() {
-            let tmp_val = *val;
-            *val = tmp_val + h;
-            let fxh1 = f(x.clone());
-            *val = tmp_val - h;
-            let fxh2 = f(x.clone());
-            grad[[idx, j]] = (fxh1 - fxh2) / (2.0 * h);
-            *val = tmp_val;
+    if rank == 1 {
+        let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
+        let mut grad: Array1<f64> = Array::zeros(x.raw_dim());
+        for idx in 0..x.len() {
+            let tmp_val = x[idx];
+            //f(x+h)계산
+            x[idx] = tmp_val + h;
+            let fxh1 = f(x.clone().into_dyn());
+
+            //f(x-h)계산
+            x[idx] = tmp_val - h;
+            let fxh2 = f(x.clone().into_dyn());
+
+            grad[idx] = (fxh1 - fxh2) / (2.0 * h);
+            x[idx] = tmp_val;
         }
+
+        return grad.into_dyn();
+    } else if rank == 2 {
+        let x = x.clone().into_dimensionality::<Ix2>().unwrap();
+        let mut grad = Array2::zeros(x.raw_dim());
+        for (idx, mut row) in x.clone().axis_iter_mut(Axis(0)).enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                let tmp_val = *val;
+                *val = tmp_val + h;
+                let fxh1 = f(x.clone().into_dyn());
+                *val = tmp_val - h;
+                let fxh2 = f(x.clone().into_dyn());
+                grad[[idx, j]] = (fxh1 - fxh2) / (2.0 * h);
+                *val = tmp_val;
+            }
+        }
+        return grad.into_dyn();
+    } else {
+        panic!("not rank");
     }
-    grad
 }
 
-fn gradient_descent<F>(f: F, init_x: Array1<f64>, ir: f64, step_num: i32) -> Array1<f64>
+fn gradient_descent<F>(f: F, init_x: ArrayD<f64>, ir: f64, step_num: i32) -> ArrayD<f64>
 where
-    F: Fn(Array1<f64>) -> f64,
+    F: Fn(ArrayD<f64>) -> f64,
 {
     let mut x = init_x;
+
     for _ in 0..step_num {
-        let grad = numerical_gradient(&f, x.clone());
+        let grad = numerical_gradient(&f, x.clone().into_dyn());
         x = x - ir * grad;
     }
-    x
+    x.into_dyn()
 }
 #[derive(Debug, Clone)]
 struct SimpleNet {
@@ -377,7 +391,7 @@ impl TwoLayerNet {
         t: Array2<f64>,
     ) -> (Array2<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
         let (w1, w2, b1, b2) = (
-            numerical_gradient2(|x| self.clone().loss(x, t.clone()), self.clone().w1),
+            numerical_gradient(|x| self.clone().loss(x.clone(), t.clone()), self.clone().w1),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
