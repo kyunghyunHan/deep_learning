@@ -1,38 +1,21 @@
-use super::weight;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use polars::prelude::*;
 use rand::prelude::*;
-use std::ops::Index;
 
-struct Mnist {
-    x_train: Array2<f64>,
-    y_train: Array2<f64>,
-}
-impl Mnist {
-    fn load_mnist() -> Mnist {
-        let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
-            .unwrap()
-            .has_header(false)
-            .finish()
-            .unwrap()
-            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
-            .unwrap();
-        let y_train = CsvReader::from_path("./dataset/mnist/y_train.csv")
-            .unwrap()
-            .has_header(false)
-            .finish()
-            .unwrap()
-            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
-            .unwrap();
-        Mnist { x_train, y_train }
-    }
-}
 /*신경망 학습 */
 pub fn main() {
+    /*
+    학습이란 훈련데이터로부터 가중치 매개변수의 최적값을 자동으로 획득하는것
+     */
+
+    /*손실함수
+    - 일반적으로  오차제곱합과 교차 엔트로피 오차 사용
+     */
     // 오차제곱합
+    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]);//소프트 맥스 함수의 출력
     let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
-    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]);
+    //0일 확률 0.1,1일 확률 0.05, 1은 정답 레이블의 위치를 가르치는 원소 1 그외에는 0으로 표 기 => 원핫인코딩
 
     println!("{}", sum_squares_error(&y, &t));
     println!("{}", cross_entropy_error(&y, &t));
@@ -174,9 +157,7 @@ where
 }
 use ndarray::{Array1, Array2, ArrayViewMut2, Axis};
 
-
-
-fn numerical_gradient2<F>(f: F,  x: Array2<f64>) -> Array2<f64>
+fn numerical_gradient2<F>(f: F, x: Array2<f64>) -> Array2<f64>
 where
     F: Fn(Array2<f64>) -> f64,
 {
@@ -350,18 +331,17 @@ impl TwoLayerNet {
         accuracy
     }
     fn numerical_gradient(
-         self,
+        self,
         x: Array2<f64>,
         t: Array2<f64>,
-    ) -> (Array2<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {      
+    ) -> (Array2<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
         let (w1, w2, b1, b2) = (
-            numerical_gradient2(|x|{self.clone().loss(x, t.clone())},  self.clone().w1),
+            numerical_gradient2(|x| self.clone().loss(x, t.clone()), self.clone().w1),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
         );
         (w1, w2, b1, b2)
-        
     }
 }
 fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64> {
@@ -382,4 +362,28 @@ fn argmax_all_rows(arr: &Array2<f64>) -> Vec<usize> {
     arr.outer_iter()
         .map(|row| row.argmax().unwrap())
         .collect::<Vec<_>>()
+}
+
+struct Mnist {
+    x_train: Array2<f64>,
+    y_train: Array2<f64>,
+}
+impl Mnist {
+    fn load_mnist() -> Mnist {
+        let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap()
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+        let y_train = CsvReader::from_path("./dataset/mnist/y_train.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap()
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+        Mnist { x_train, y_train }
+    }
 }
