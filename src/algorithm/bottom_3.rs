@@ -12,7 +12,7 @@ pub fn main() {
     /*손실함수
     - 일반적으로  오차제곱합과 교차 엔트로피 오차 사용
      */
-    // 오차제곱합
+    //오차제곱합
     let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
     let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     //0일 확률 0.1,1일 확률 0.05, 1은 정답 레이블의 위치를 가르치는 원소 1 그외에는 0으로 표 기 => 원핫인코딩
@@ -103,13 +103,24 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
             .unwrap();
 
         let delta = 1e-7;
-        let y = y.map(|&y_i| y_i + delta);
+        let y = y.mapv(|val| val + delta);
 
-        let log_y = y.iter().zip(t.iter()).map(|(&y_i, &t_i)| t_i * y_i.ln());
+        // let log_y = y.mapv(f64::ln);
 
-        let neg_sum_log_y: f64 = log_y.map(|x| -x).sum();
+        let mut errors = Vec::new();
+        for (y_row, t_row) in y.outer_iter().zip(t.outer_iter()) {
+            let error = -y_row
+                .iter()
+                .zip(t_row.iter())
+                .map(|(&y_i, &t_i)| t_i * y_i.ln())
+                .sum::<f64>();
+            errors.push(error);
+        }
 
-        neg_sum_log_y
+        let batch_size = y.shape()[0] as f64;
+        let total_error: f64 = errors.iter().sum();
+
+        total_error / batch_size
     } else {
         let t = t
             .clone()
@@ -124,13 +135,19 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
             .into_shape((1, y.len()))
             .unwrap();
         let delta = 1e-7;
-        let y = y + delta;
+        let neg_sum_log_y: f64 = y
+            .outer_iter()
+            .zip(t.outer_iter())
+            .map(|(y_row, t_row)| {
+                -y_row
+                    .iter()
+                    .zip(t_row.iter())
+                    .map(|(&y_i, &t_i)| t_i * y_i.ln())
+                    .sum::<f64>()
+            })
+            .sum();
 
-        let log_y = t * &y.mapv(f64::ln);
-
-        let neg_sum_log_y: f64 = -log_y.sum_axis(Axis(1)).sum();
-
-        neg_sum_log_y
+        neg_sum_log_y / y.shape()[0] as f64
     }
 }
 /* */
@@ -185,7 +202,7 @@ where
 
     grad
 }
-use ndarray::{Array1, Array2, ArrayViewMut2, Axis};
+use ndarray::{Array1, Array2, Axis};
 
 fn numerical_gradient2<F>(f: F, x: Array2<f64>) -> Array2<f64>
 where
@@ -196,19 +213,14 @@ where
     for (idx, mut row) in x.clone().axis_iter_mut(Axis(0)).enumerate() {
         for (j, val) in row.iter_mut().enumerate() {
             let tmp_val = *val;
-            // f(x+h) 계산
             *val = tmp_val + h;
             let fxh1 = f(x.clone());
-
-            // f(x-h) 계산
             *val = tmp_val - h;
             let fxh2 = f(x.clone());
-
             grad[[idx, j]] = (fxh1 - fxh2) / (2.0 * h);
             *val = tmp_val;
         }
     }
-
     grad
 }
 
