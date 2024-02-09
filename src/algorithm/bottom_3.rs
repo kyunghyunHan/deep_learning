@@ -367,7 +367,9 @@ impl TwoLayerNet {
         array_2d
     }
 
-    pub fn loss(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
+    pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
+        let rank=x.;
+        if rank==1
         let y = self.predict(x);
         cross_entropy_error(&y.into_dyn(), &t.into_dyn())
     }
@@ -387,9 +389,9 @@ impl TwoLayerNet {
     }
     fn numerical_gradient(
         self,
-        x: Array2<f64>,
-        t: Array2<f64>,
-    ) -> (Array2<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
+        x: ArrayD<f64>,
+        t: ArrayD<f64>,
+    ) -> (ArrayD<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
         let (w1, w2, b1, b2) = (
             numerical_gradient(|x| self.clone().loss(x.clone(), t.clone()), self.clone().w1),
             arr2(&[[1.0]]),
