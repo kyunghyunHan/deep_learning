@@ -368,10 +368,8 @@ impl TwoLayerNet {
     }
 
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-        let rank=x.;
-        if rank==1
-        let y = self.predict(x);
-        cross_entropy_error(&y.into_dyn(), &t.into_dyn())
+    
+        cross_entropy_error(&x.into_dyn(), &t.into_dyn())
     }
     fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
         let y = self.predict(x.clone());
