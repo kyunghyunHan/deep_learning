@@ -63,7 +63,10 @@ pub fn main() {
     );
 
     let init_x = arr1(&[-3.0, 4.0]);
-    println!("{}", gradient_descent(function_2, init_x.into_dyn(), 0.1, 100));
+    println!(
+        "{}",
+        gradient_descent(function_2, init_x.into_dyn(), 0.1, 100)
+    );
     println!(
         "학습률이 너무 큰 예{}",
         gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 10.0, 100)
@@ -172,8 +175,8 @@ fn function_2(x: ArrayD<f64>) -> f64 {
     let rank = x.ndim();
     if rank == 1 {
         let x = x.into_dimensionality::<Ix1>().unwrap();
-        return x[0].powf(2.0) + x[1].powf(2.0)
-    }else{
+        return x[0].powf(2.0) + x[1].powf(2.0);
+    } else {
         panic!("erorr이지")
     }
 }
@@ -368,7 +371,6 @@ impl TwoLayerNet {
     }
 
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-    
         cross_entropy_error(&x.into_dyn(), &t.into_dyn())
     }
     fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
@@ -385,6 +387,7 @@ impl TwoLayerNet {
         let accuracy = num_equal as f64 / x.shape()[0] as f64;
         accuracy
     }
+
     fn numerical_gradient(
         self,
         x: ArrayD<f64>,
