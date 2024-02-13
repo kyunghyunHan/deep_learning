@@ -3,7 +3,7 @@ use ndarray_stats::QuantileExt;
 use polars::prelude::*;
 use rand::prelude::*;
 
-/*신경망 학습 */
+/*신경망 학습 */  
 pub fn main() {
     /*
     학습이란 훈련데이터로부터 가중치 매개변수의 최적값을 자동으로 획득하는것
