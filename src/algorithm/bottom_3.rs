@@ -1,3 +1,5 @@
+use core::panic;
+
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use polars::prelude::*;
@@ -94,21 +96,23 @@ pub fn main() {
     );
 
     /*신경망 에서의 기울기 */
-    let simple = SimpleNet { w: arr2(&[[0.0]]) };
+    let simple = SimpleNet {
+        w: arr2(&[[0.0]]).into_dyn(),
+    };
     let net = SimpleNet::_init_(simple);
     println!("가중치 매개변수:{:?}", net);
     let x = arr1(&[0.6, 0.9]);
     let p = net.clone().predict(x.clone().into_dyn());
     println!("{:?}", p);
     println!(
-        "{}",
+        "최대값의 인덱스:{}",
         p.into_dimensionality::<Ix1>().unwrap().argmax().unwrap()
     );
 
     let t = arr1(&[0f64, 0f64, 1f64]);
 
     println!(
-        "{:?}",
+        "loss:{:?}",
         SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
     );
 }
@@ -125,67 +129,70 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
 fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
     let rank = y.ndim();
     let delta = 1e-7;
-    if rank == 1 {
-        //1차원
-        let t = t
-            .clone()
-            .into_dimensionality::<Ix1>()
-            .unwrap()
-            .into_shape((1, t.len()))
-            .unwrap();
-        let y = y
-            .clone()
-            .into_dimensionality::<Ix1>()
-            .unwrap()
-            .into_shape((1, y.len()))
-            .unwrap();
-        //더하기
-        let y = y.mapv(|val| val + delta);
+    match rank {
+        1 => {
+            let t = t
+                .clone()
+                .into_dimensionality::<Ix1>()
+                .unwrap()
+                .into_shape((1, t.len()))
+                .unwrap();
+            let y = y
+                .clone()
+                .into_dimensionality::<Ix1>()
+                .unwrap()
+                .into_shape((1, y.len()))
+                .unwrap();
+            //더하기
+            let y = y.mapv(|val| val + delta);
 
-        let mut errors = Vec::new();
-        for (y_row, t_row) in y.outer_iter().zip(t.outer_iter()) {
-            let error = -y_row
-                .iter()
-                .zip(t_row.iter())
-                .map(|(&y_i, &t_i)| t_i * y_i.ln())
-                .sum::<f64>();
-            errors.push(error);
-        }
-
-        let batch_size = y.shape()[0] as f64;
-
-        let total_error: f64 = errors.iter().sum();
-
-        total_error / batch_size
-    } else if rank == 2 {
-        let t = t
-            .clone()
-            .into_dimensionality::<Ix2>()
-            .unwrap()
-            .into_shape((1, t.len()))
-            .unwrap();
-        let y = y
-            .clone()
-            .into_dimensionality::<Ix2>()
-            .unwrap()
-            .into_shape((1, y.len()))
-            .unwrap();
-        let delta = 1e-7;
-        let neg_sum_log_y: f64 = y
-            .outer_iter()
-            .zip(t.outer_iter())
-            .map(|(y_row, t_row)| {
-                -y_row
+            let mut errors = Vec::new();
+            for (y_row, t_row) in y.outer_iter().zip(t.outer_iter()) {
+                let error = -y_row
                     .iter()
                     .zip(t_row.iter())
-                    .map(|(&y_i, &t_i)| t_i * (y_i + delta).ln())
-                    .sum::<f64>()
-            })
-            .sum();
+                    .map(|(&y_i, &t_i)| t_i * y_i.ln())
+                    .sum::<f64>();
+                errors.push(error);
+            }
 
-        neg_sum_log_y / y.shape()[0] as f64
-    } else {
-        panic!("error");
+            let batch_size = y.shape()[0] as f64;
+
+            let total_error: f64 = errors.iter().sum();
+
+            total_error / batch_size
+        }
+        2 => {
+            let t = t
+                .clone()
+                .into_dimensionality::<Ix2>()
+                .unwrap()
+                .into_shape((1, t.len()))
+                .unwrap();
+            let y = y
+                .clone()
+                .into_dimensionality::<Ix2>()
+                .unwrap()
+                .into_shape((1, y.len()))
+                .unwrap();
+            let delta = 1e-7;
+            let neg_sum_log_y: f64 = y
+                .outer_iter()
+                .zip(t.outer_iter())
+                .map(|(y_row, t_row)| {
+                    -y_row
+                        .iter()
+                        .zip(t_row.iter())
+                        .map(|(&y_i, &t_i)| t_i * (y_i + delta).ln())
+                        .sum::<f64>()
+                })
+                .sum();
+
+            neg_sum_log_y / y.shape()[0] as f64
+        }
+        _ => {
+            panic!("rank error")
+        }
     }
 }
 
@@ -203,11 +210,14 @@ fn function_1(x: f64) -> f64 {
 }
 fn function_2(x: ArrayD<f64>) -> f64 {
     let rank = x.ndim();
-    if rank == 1 {
-        let x = x.into_dimensionality::<Ix1>().unwrap();
-        return x[0].powf(2.0) + x[1].powf(2.0);
-    } else {
-        panic!("erorr이지")
+    match rank {
+        1 => {
+            let x = x.into_dimensionality::<Ix1>().unwrap();
+            return x[0].powf(2.0) + x[1].powf(2.0);
+        }
+        _ => {
+            panic!("erorr이지")
+        }
     }
 }
 
@@ -235,41 +245,46 @@ where
 {
     let rank = x.ndim(); //rank설정
     let h = 1e-4;
-    if rank == 1 {
-        let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
-        let mut grad: Array1<f64> = Array::zeros(x.raw_dim()); //x와 형상이 같은 배열을 생성
-        for idx in 0..x.len() {
-            let tmp_val = x[idx];
-            //f(x+h)계산
-            x[idx] = tmp_val + h;
-            let fxh1 = f(x.clone().into_dyn());
 
-            //f(x-h)계산
-            x[idx] = tmp_val - h;
-            let fxh2 = f(x.clone().into_dyn());
-
-            grad[idx] = (fxh1 - fxh2) / (2.0 * h);
-            x[idx] = tmp_val;
-        }
-
-        return grad.into_dyn();
-    } else if rank == 2 {
-        let x = x.clone().into_dimensionality::<Ix2>().unwrap();
-        let mut grad = Array2::zeros(x.raw_dim());
-        for (idx, mut row) in x.clone().axis_iter_mut(Axis(0)).enumerate() {
-            for (j, val) in row.iter_mut().enumerate() {
-                let tmp_val = *val;
-                *val = tmp_val + h;
+    match rank {
+        1 => {
+            let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
+            let mut grad: Array1<f64> = Array::zeros(x.raw_dim()); //x와 형상이 같은 배열을 생성
+            for idx in 0..x.len() {
+                let tmp_val = x[idx];
+                //f(x+h)계산
+                x[idx] = tmp_val + h;
                 let fxh1 = f(x.clone().into_dyn());
-                *val = tmp_val - h;
+
+                //f(x-h)계산
+                x[idx] = tmp_val - h;
                 let fxh2 = f(x.clone().into_dyn());
-                grad[[idx, j]] = (fxh1 - fxh2) / (2.0 * h);
-                *val = tmp_val;
+
+                grad[idx] = (fxh1 - fxh2) / (2.0 * h);
+                x[idx] = tmp_val;
             }
+
+            return grad.into_dyn();
         }
-        return grad.into_dyn();
-    } else {
-        panic!("not rank");
+        2 => {
+            let x = x.clone().into_dimensionality::<Ix2>().unwrap();
+            let mut grad = Array2::zeros(x.raw_dim());
+            for (idx, mut row) in x.clone().axis_iter_mut(Axis(0)).enumerate() {
+                for (j, val) in row.iter_mut().enumerate() {
+                    let tmp_val = *val;
+                    *val = tmp_val + h;
+                    let fxh1 = f(x.clone().into_dyn());
+                    *val = tmp_val - h;
+                    let fxh2 = f(x.clone().into_dyn());
+                    grad[[idx, j]] = (fxh1 - fxh2) / (2.0 * h);
+                    *val = tmp_val;
+                }
+            }
+            return grad.into_dyn();
+        }
+        _ => {
+            panic!("error")
+        }
     }
 }
 /*경사하강법 */
@@ -278,7 +293,6 @@ where
     F: Fn(ArrayD<f64>) -> f64,
 {
     let mut x = init_x;
-
     for _ in 0..step_num {
         let grad = numerical_gradient(&f, x.clone().into_dyn());
         x = x - ir * grad;
@@ -287,7 +301,7 @@ where
 }
 #[derive(Debug, Clone)]
 struct SimpleNet {
-    w: Array2<f64>,
+    w: ArrayD<f64>,
 }
 
 impl SimpleNet {
@@ -302,7 +316,7 @@ impl SimpleNet {
             }
             arr
         };
-        self.w = arr2(&matrix);
+        self.w = arr2(&matrix).into_dyn();
         self
     }
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
@@ -311,11 +325,13 @@ impl SimpleNet {
         match rank {
             1 => {
                 let x = x.into_dimensionality::<Ix1>().unwrap();
-                x.dot(&self.w).into_dyn()
+                x.dot(&self.w.into_dimensionality::<Ix2>().unwrap())
+                    .into_dyn()
             }
             2 => {
                 let x = x.into_dimensionality::<Ix2>().unwrap();
-                x.dot(&self.w).into_dyn()
+                x.dot(&self.w.into_dimensionality::<Ix2>().unwrap())
+                    .into_dyn()
             }
             _ => {
                 panic!("not rank")
@@ -342,6 +358,12 @@ impl SimpleNet {
                 panic!("not rank")
             }
         }
+    }
+    fn f_functsion(w: ArrayD<f64>) -> f64 {
+        let x: ArrayD<f64> = Default::default();
+        let t: ArrayD<f64> = Default::default();
+        let net = SimpleNet { w: w };
+        SimpleNet::loss(net, x, t)
     }
 }
 fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
@@ -380,6 +402,7 @@ impl TwoLayerNet {
     ) -> TwoLayerNet {
         let mut rng = rand::thread_rng();
         let mut matrix = Array2::<f64>::zeros((input_size, hidden_size));
+        //가중치
         TwoLayerNet {
             w1: weight_init_std
                 * fill_with_random(
@@ -400,30 +423,35 @@ impl TwoLayerNet {
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let (w1, w2) = (self.w1, self.w2);
         let (b1, b2) = (self.b1, self.b2);
-        let x = x.into_dimensionality::<Ix2>().unwrap();
-        let a1 = x.dot(&w1) + b1;
-        let z1 = sigmoid(x);
-        let a2 = z1.dot(&w2) + b2;
 
-        let vec_of_vec: Vec<Vec<f64>> = a2
-            .axis_iter(Axis(0))
-            .map(|row| softmax(row.to_owned().into_dyn()))
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|x| x.clone().into_dimensionality::<Ix1>().unwrap().to_vec())
-            .collect();
-        let array_2d: Array2<f64> = Array2::from_shape_vec(
-            (a2.shape()[0], a2.shape()[1]),
-            vec_of_vec.into_iter().flatten().collect(),
-        )
-        .unwrap();
-        array_2d.into_dyn()
+        let rank = x.ndim();
+
+        match rank {
+            1 => {
+                let x = x.into_dimensionality::<Ix1>().unwrap();
+                let a1 = x.dot(&w1) + b1;
+                let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix1>().unwrap();
+                let a2 = z1.dot(&w2) + b2;
+                softmax(a2.into_dyn())
+            }
+            2 => {
+                let x = x.into_dimensionality::<Ix2>().unwrap();
+                let a1 = x.dot(&w1) + b1;
+                let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix2>().unwrap();
+                let a2 = z1.dot(&w2) + b2;
+                softmax(a2.into_dyn())
+            }
+            _ => {
+                panic!("predict rank error");
+            }
+        }
     }
 
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         cross_entropy_error(&x.into_dyn(), &t.into_dyn())
     }
     fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
+        let rank = x.ndim();
         let y = self.predict(x.clone().into_dyn());
 
         let y_argmax = argmax_all_rows(&y);
@@ -466,7 +494,7 @@ fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64>
     view.to_owned()
 }
 //시그모이드
-fn sigmoid(x: Array2<f64>) -> Array2<f64> {
+fn sigmoid(x: ArrayD<f64>) -> ArrayD<f64> {
     x.mapv(|element| 1.0 / (1.0 + (-element).exp()))
 }
 fn argmax_all_rows(arr: &ArrayD<f64>) -> Vec<usize> {
