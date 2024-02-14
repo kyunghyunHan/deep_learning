@@ -450,20 +450,51 @@ impl TwoLayerNet {
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         cross_entropy_error(&x.into_dyn(), &t.into_dyn())
     }
-    fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
+    fn accuracy(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         let rank = x.ndim();
-        let y = self.predict(x.clone().into_dyn());
 
-        let y_argmax = argmax_all_rows(&y);
-        let t_argmax = argmax_all_rows(&t.into_dyn());
-
-        let num_equal = y_argmax
-            .iter()
-            .zip(t_argmax.iter())
-            .filter(|&(yi, ti)| yi == ti)
-            .count();
-        let accuracy = num_equal as f64 / x.shape()[0] as f64;
-        accuracy
+        match rank {
+            1 => {
+                let x = x.into_dimensionality::<Ix1>().unwrap();
+                let y = self
+                    .predict(x.clone().into_dyn())
+                    .into_dimensionality::<Ix1>()
+                    .unwrap();
+                let y = y.argmax().unwrap();
+                let t = t.into_dimensionality::<Ix1>().unwrap().argmax().unwrap();
+                let accuracy = if y == t {
+                    y as f64 + t as f64 / x.shape()[0] as f64
+                } else {
+                    0f64
+                };
+                accuracy
+            }
+            2 => {
+                let y = self.predict(x.clone().into_dyn());
+                let y_argmax = y
+                    .into_dimensionality::<Ix2>()
+                    .unwrap()
+                    .outer_iter()
+                    .map(|row| row.argmax().unwrap())
+                    .collect::<Vec<_>>();
+                let t_argmax = t
+                    .into_dimensionality::<Ix2>()
+                    .unwrap()
+                    .outer_iter()
+                    .map(|row| row.argmax().unwrap())
+                    .collect::<Vec<_>>();
+                let num_equal = y_argmax
+                    .iter()
+                    .zip(t_argmax.iter())
+                    .filter(|&(yi, ti)| yi == ti)
+                    .count();
+                let accuracy = num_equal as f64 / x.shape()[0] as f64;
+                accuracy
+            }
+            _ => {
+                panic!("accuracy rank error")
+            }
+        }
     }
 
     fn numerical_gradient(
@@ -496,12 +527,6 @@ fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64>
 //시그모이드
 fn sigmoid(x: ArrayD<f64>) -> ArrayD<f64> {
     x.mapv(|element| 1.0 / (1.0 + (-element).exp()))
-}
-fn argmax_all_rows(arr: &ArrayD<f64>) -> Vec<usize> {
-    let arr = arr.clone().into_dimensionality::<Ix2>().unwrap();
-    arr.outer_iter()
-        .map(|row| row.argmax().unwrap())
-        .collect::<Vec<_>>()
 }
 
 struct Mnist {
