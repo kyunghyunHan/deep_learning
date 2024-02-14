@@ -57,10 +57,10 @@ pub fn main() {
     마라톤 선수 10분에 2km
     속도는 0.2 1분에 0.2
     미분=>변화량
-    
+
     10e4
 
-    
+
      */
     //수치미분
     let x1 = Array1::range(0.0, 20.0, 0.1);
@@ -81,7 +81,7 @@ pub fn main() {
 
     let init_x = arr1(&[-3.0, 4.0]);
     println!(
-        "{}",
+        "gradient_descent:{}",
         gradient_descent(function_2, init_x.into_dyn(), 0.1, 100)
     );
     println!(
@@ -92,16 +92,21 @@ pub fn main() {
         "학습률이 너무 작은 예{}",
         gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 1e-10, 100)
     );
+
+    /*신경망 에서의 기울기 */
     let simple = SimpleNet { w: arr2(&[[0.0]]) };
     let net = SimpleNet::_init_(simple);
-    println!("{:?}", net);
-
+    println!("가중치 매개변수:{:?}", net);
     let x = arr1(&[0.6, 0.9]);
-    let p = net.clone().arr1_predict(x.clone());
+    let p = net.clone().predict(x.clone().into_dyn());
     println!("{:?}", p);
-    println!("{}", p.argmax().unwrap());
+    println!("{}", p.into_dimensionality::<Ix1>().unwrap().argmax().unwrap());
+
     let t = arr1(&[0f64, 0f64, 1f64]);
-    println!("{:?}", SimpleNet::arr1_loss(net.clone(), x.clone(), t));
+
+    println!("{:?}", SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn()));
+
+
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -144,7 +149,7 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
         }
 
         let batch_size = y.shape()[0] as f64;
-   
+
         let total_error: f64 = errors.iter().sum();
 
         total_error / batch_size
@@ -178,9 +183,7 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
     } else {
         panic!("error");
     }
-
 }
-
 
 /* */
 fn random_choice(train_size: usize, batch_size: usize) -> Vec<usize> {
@@ -208,8 +211,8 @@ fn function_2(x: ArrayD<f64>) -> f64 {
 fn function_tmp1(x0: f64) -> f64 {
     x0 * x0 + 4f64.powf(2.0)
 }
-fn function_tmp2(x1:f64)->f64{
-    3f64.powf(2.0) + x1*x1
+fn function_tmp2(x1: f64) -> f64 {
+    3f64.powf(2.0) + x1 * x1
 }
 /*미분 */
 fn numerical_diff<F>(f: F, x: f64) -> f64
@@ -230,7 +233,7 @@ where
     let h = 1e-4;
     if rank == 1 {
         let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
-        let mut grad: Array1<f64> = Array::zeros(x.raw_dim());//x와 형상이 같은 배열을 생성
+        let mut grad: Array1<f64> = Array::zeros(x.raw_dim()); //x와 형상이 같은 배열을 생성
         for idx in 0..x.len() {
             let tmp_val = x[idx];
             //f(x+h)계산
@@ -298,47 +301,63 @@ impl SimpleNet {
         self.w = arr2(&matrix);
         self
     }
-    fn predict(self, x: Array2<f64>) -> Array2<f64> {
-        x.dot(&self.w)
+    fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
+        let rank = x.ndim();
+        println!("predict_rank:{}",rank);
+        if rank == 1 {
+            let x = x.into_dimensionality::<Ix1>().unwrap();
+            return x.dot(&self.w).into_dyn();
+        } else if rank == 2 {
+            let x = x.into_dimensionality::<Ix2>().unwrap();
+            return x.dot(&self.w).into_dyn();
+        } else {
+            panic!("rank error")
+        }
     }
 
-    fn arr1_predict(self, x: Array1<f64>) -> Array1<f64> {
-        x.dot(&self.w)
-    }
-    fn loss(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
-        let z = self.predict(x);
-        let vec_of_vec: Vec<Vec<f64>> = z
-            .axis_iter(Axis(0))
-            .map(|row| softmax(&row.to_owned()))
-            .collect::<Vec<_>>()
-            .iter()
-            .map(|x| x.to_vec())
-            .collect();
-        let y: Array2<f64> = Array2::from_shape_vec(
-            (z.shape()[0], z.shape()[1]),
-            vec_of_vec.into_iter().flatten().collect(),
-        )
-        .unwrap();
-        let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+  
+    fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
+        let rank=x.ndim();
+        match rank {
+           1=>{
+            let z = self.predict(x.clone());
+            let y= softmax(z);
+            let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+            loss
+           },
+           2=>{
+            let z = self.predict(x.clone());
+            let y= softmax(z);
+            let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+            loss
+           },
+           _=>{
+            panic!("not rank")
+           }
 
-        loss
+        }
     }
-    fn arr1_loss(self, x: Array1<f64>, t: Array1<f64>) -> f64 {
-        let z = self.arr1_predict(x);
-        let y = softmax(&z.to_owned());
-        let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
-        loss
+  
+}
+fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
+    let rank = a.ndim();
+    println!("{}",rank);
+    if rank == 1 {
+        let a = a.clone().into_dimensionality::<Ix1>().unwrap();
+        let c: f64 = a[a.argmax().unwrap()];
+        let exp_a = a.mapv(|x| (x - c).exp());
+        let sum_exp_a = exp_a.sum(); 
+        (exp_a / sum_exp_a).into_dyn()
+    } else if rank == 2 {
+        let a = a.clone().into_dimensionality::<Ix2>().unwrap();
+        let exp_a = a.mapv(f64::exp);
+        let sum_exp_a = exp_a.sum_axis(Axis(1)); 
+        exp_a / sum_exp_a.insert_axis(Axis(1)).into_dyn()
+    } else {
+        panic!("rank error")
     }
 }
-fn softmax(a: &Array1<f64>) -> Array1<f64> {
-    let c: f64 = a[a.argmax().unwrap()];
-    let exp_a = a.mapv(|x| (x - c).exp()); // Subtract the maximum value and exponentiate each element
-    let sum_exp_a = exp_a.sum(); // Compute the sum of the exponentiated values
-    exp_a / sum_exp_a
-}
-// fn f(w){
-//     return SimpleNet::loss(self, x, t);
-// }
+
 #[derive(Clone)]
 struct TwoLayerNet {
     w1: Array2<f64>,
@@ -373,37 +392,37 @@ impl TwoLayerNet {
             b2: Array1::<f64>::zeros(hidden_size),
         }
     }
-    fn predict(self, x: Array2<f64>) -> Array2<f64> {
+    fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let (w1, w2) = (self.w1, self.w2);
         let (b1, b2) = (self.b1, self.b2);
-
+        let x= x.into_dimensionality::<Ix2>().unwrap();
         let a1 = x.dot(&w1) + b1;
         let z1 = sigmoid(x);
         let a2 = z1.dot(&w2) + b2;
 
         let vec_of_vec: Vec<Vec<f64>> = a2
             .axis_iter(Axis(0))
-            .map(|row| softmax(&row.to_owned()))
+            .map(|row| softmax(row.to_owned().into_dyn()))
             .collect::<Vec<_>>()
             .iter()
-            .map(|x| x.to_vec())
+            .map(|x| x.clone().into_dimensionality::<Ix1>().unwrap().to_vec())
             .collect();
         let array_2d: Array2<f64> = Array2::from_shape_vec(
             (a2.shape()[0], a2.shape()[1]),
             vec_of_vec.into_iter().flatten().collect(),
         )
         .unwrap();
-        array_2d
+        array_2d.into_dyn()
     }
 
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         cross_entropy_error(&x.into_dyn(), &t.into_dyn())
     }
     fn accuracy(self, x: Array2<f64>, t: Array2<f64>) -> f64 {
-        let y = self.predict(x.clone());
+        let y = self.predict(x.clone().into_dyn());
 
         let y_argmax = argmax_all_rows(&y);
-        let t_argmax = argmax_all_rows(&t);
+        let t_argmax = argmax_all_rows(&t.into_dyn());
 
         let num_equal = y_argmax
             .iter()
@@ -445,7 +464,8 @@ fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64>
 fn sigmoid(x: Array2<f64>) -> Array2<f64> {
     x.mapv(|element| 1.0 / (1.0 + (-element).exp()))
 }
-fn argmax_all_rows(arr: &Array2<f64>) -> Vec<usize> {
+fn argmax_all_rows(arr: &ArrayD<f64>) -> Vec<usize> {
+    let arr= arr.clone().into_dimensionality::<Ix2>().unwrap();
     arr.outer_iter()
         .map(|row| row.argmax().unwrap())
         .collect::<Vec<_>>()
