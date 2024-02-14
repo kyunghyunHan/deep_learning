@@ -100,13 +100,17 @@ pub fn main() {
     let x = arr1(&[0.6, 0.9]);
     let p = net.clone().predict(x.clone().into_dyn());
     println!("{:?}", p);
-    println!("{}", p.into_dimensionality::<Ix1>().unwrap().argmax().unwrap());
+    println!(
+        "{}",
+        p.into_dimensionality::<Ix1>().unwrap().argmax().unwrap()
+    );
 
     let t = arr1(&[0f64, 0f64, 1f64]);
 
-    println!("{:?}", SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn()));
-
-
+    println!(
+        "{:?}",
+        SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
+    );
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -303,55 +307,56 @@ impl SimpleNet {
     }
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let rank = x.ndim();
-        println!("predict_rank:{}",rank);
-        if rank == 1 {
-            let x = x.into_dimensionality::<Ix1>().unwrap();
-            return x.dot(&self.w).into_dyn();
-        } else if rank == 2 {
-            let x = x.into_dimensionality::<Ix2>().unwrap();
-            return x.dot(&self.w).into_dyn();
-        } else {
-            panic!("rank error")
-        }
-    }
 
-  
-    fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-        let rank=x.ndim();
         match rank {
-           1=>{
-            let z = self.predict(x.clone());
-            let y= softmax(z);
-            let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
-            loss
-           },
-           2=>{
-            let z = self.predict(x.clone());
-            let y= softmax(z);
-            let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
-            loss
-           },
-           _=>{
-            panic!("not rank")
-           }
-
+            1 => {
+                let x = x.into_dimensionality::<Ix1>().unwrap();
+                x.dot(&self.w).into_dyn()
+            }
+            2 => {
+                let x = x.into_dimensionality::<Ix2>().unwrap();
+                x.dot(&self.w).into_dyn()
+            }
+            _ => {
+                panic!("not rank")
+            }
         }
     }
-  
+
+    fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
+        let rank = x.ndim();
+        match rank {
+            1 => {
+                let z = self.predict(x.clone());
+                let y = softmax(z);
+                let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+                loss
+            }
+            2 => {
+                let z = self.predict(x.clone());
+                let y = softmax(z);
+                let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+                loss
+            }
+            _ => {
+                panic!("not rank")
+            }
+        }
+    }
 }
 fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
     let rank = a.ndim();
-    println!("{}",rank);
+    println!("{}", rank);
     if rank == 1 {
         let a = a.clone().into_dimensionality::<Ix1>().unwrap();
         let c: f64 = a[a.argmax().unwrap()];
         let exp_a = a.mapv(|x| (x - c).exp());
-        let sum_exp_a = exp_a.sum(); 
+        let sum_exp_a = exp_a.sum();
         (exp_a / sum_exp_a).into_dyn()
     } else if rank == 2 {
         let a = a.clone().into_dimensionality::<Ix2>().unwrap();
         let exp_a = a.mapv(f64::exp);
-        let sum_exp_a = exp_a.sum_axis(Axis(1)); 
+        let sum_exp_a = exp_a.sum_axis(Axis(1));
         exp_a / sum_exp_a.insert_axis(Axis(1)).into_dyn()
     } else {
         panic!("rank error")
@@ -395,7 +400,7 @@ impl TwoLayerNet {
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let (w1, w2) = (self.w1, self.w2);
         let (b1, b2) = (self.b1, self.b2);
-        let x= x.into_dimensionality::<Ix2>().unwrap();
+        let x = x.into_dimensionality::<Ix2>().unwrap();
         let a1 = x.dot(&w1) + b1;
         let z1 = sigmoid(x);
         let a2 = z1.dot(&w2) + b2;
@@ -465,7 +470,7 @@ fn sigmoid(x: Array2<f64>) -> Array2<f64> {
     x.mapv(|element| 1.0 / (1.0 + (-element).exp()))
 }
 fn argmax_all_rows(arr: &ArrayD<f64>) -> Vec<usize> {
-    let arr= arr.clone().into_dimensionality::<Ix2>().unwrap();
+    let arr = arr.clone().into_dimensionality::<Ix2>().unwrap();
     arr.outer_iter()
         .map(|row| row.argmax().unwrap())
         .collect::<Vec<_>>()
