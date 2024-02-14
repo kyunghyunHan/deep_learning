@@ -3,7 +3,7 @@ use ndarray_stats::QuantileExt;
 use polars::prelude::*;
 use rand::prelude::*;
 
-/*신경망 학습 */  
+/*신경망 학습 */
 pub fn main() {
     /*
     학습이란 훈련데이터로부터 가중치 매개변수의 최적값을 자동으로 획득하는것
@@ -49,14 +49,31 @@ pub fn main() {
     println!("y_train::{}", y_batch);
     println!("{:?}", random_choice(60000, 10));
     println!(
-        "{:?}",
+        "cross:{:?}",
         cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
     );
+
+    /*미분
+    마라톤 선수 10분에 2km
+    속도는 0.2 1분에 0.2
+    미분=>변화량
+    
+    10e4
+
+    
+     */
+    //수치미분
     let x1 = Array1::range(0.0, 20.0, 0.1);
     let y1 = x1.map(|&elem| function_1(elem));
     println!("{:?}", y1);
-    println!("{}", numerical_diff(function_tmp1, 5.0)); //0
-    println!("{}", numerical_diff(function_tmp1, 3.0));
+    println!("미분:{}", numerical_diff(function_1, 5.0)); //0
+    println!("미분:{}", numerical_diff(function_1, 5.0)); //0
+
+    /*변수가 여러개=>편미분 */
+    println!("편미분:{}", numerical_diff(function_tmp1, 5.0)); //0
+    println!("편미분:{}", numerical_diff(function_tmp1, 3.0));
+    println!("편미분:{}", numerical_diff(function_tmp2, 4.0));
+    /*gradient */
     println!(
         "{}",
         numerical_gradient(function_2, arr1(&[3.0, 0.0]).into_dyn())
@@ -95,9 +112,12 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
         .sum::<f64>();
     0.5 * squared_diff
 }
+/*미해결 */
 fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
     let rank = y.ndim();
+    let delta = 1e-7;
     if rank == 1 {
+        //1차원
         let t = t
             .clone()
             .into_dimensionality::<Ix1>()
@@ -110,11 +130,8 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
             .unwrap()
             .into_shape((1, y.len()))
             .unwrap();
-
-        let delta = 1e-7;
+        //더하기
         let y = y.mapv(|val| val + delta);
-
-        // let log_y = y.mapv(f64::ln);
 
         let mut errors = Vec::new();
         for (y_row, t_row) in y.outer_iter().zip(t.outer_iter()) {
@@ -127,10 +144,11 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
         }
 
         let batch_size = y.shape()[0] as f64;
+   
         let total_error: f64 = errors.iter().sum();
 
         total_error / batch_size
-    } else {
+    } else if rank == 2 {
         let t = t
             .clone()
             .into_dimensionality::<Ix2>()
@@ -157,8 +175,13 @@ fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
             .sum();
 
         neg_sum_log_y / y.shape()[0] as f64
+    } else {
+        panic!("error");
     }
+
 }
+
+
 /* */
 fn random_choice(train_size: usize, batch_size: usize) -> Vec<usize> {
     let mut rng = rand::thread_rng();
@@ -185,6 +208,9 @@ fn function_2(x: ArrayD<f64>) -> f64 {
 fn function_tmp1(x0: f64) -> f64 {
     x0 * x0 + 4f64.powf(2.0)
 }
+fn function_tmp2(x1:f64)->f64{
+    3f64.powf(2.0) + x1*x1
+}
 /*미분 */
 fn numerical_diff<F>(f: F, x: f64) -> f64
 where
@@ -204,7 +230,7 @@ where
     let h = 1e-4;
     if rank == 1 {
         let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
-        let mut grad: Array1<f64> = Array::zeros(x.raw_dim());
+        let mut grad: Array1<f64> = Array::zeros(x.raw_dim());//x와 형상이 같은 배열을 생성
         for idx in 0..x.len() {
             let tmp_val = x[idx];
             //f(x+h)계산
@@ -239,7 +265,7 @@ where
         panic!("not rank");
     }
 }
-
+/*경사하강법 */
 fn gradient_descent<F>(f: F, init_x: ArrayD<f64>, ir: f64, step_num: i32) -> ArrayD<f64>
 where
     F: Fn(ArrayD<f64>) -> f64,
@@ -394,7 +420,10 @@ impl TwoLayerNet {
         t: ArrayD<f64>,
     ) -> (ArrayD<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
         let (w1, w2, b1, b2) = (
-            numerical_gradient(|x| self.clone().loss(x.clone(), t.clone()), self.clone().w1.into_dyn()),
+            numerical_gradient(
+                |x| self.clone().loss(x.clone(), t.clone()),
+                self.clone().w1.into_dyn(),
+            ),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
