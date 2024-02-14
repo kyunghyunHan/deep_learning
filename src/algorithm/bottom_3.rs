@@ -394,7 +394,7 @@ impl TwoLayerNet {
         t: ArrayD<f64>,
     ) -> (ArrayD<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
         let (w1, w2, b1, b2) = (
-            numerical_gradient(|x| self.clone().loss(x.clone(), t.clone()), self.clone().w1),
+            numerical_gradient(|x| self.clone().loss(x.clone(), t.clone()), self.clone().w1.into_dyn()),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
             arr2(&[[1.0]]),
