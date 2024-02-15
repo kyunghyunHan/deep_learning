@@ -1,6 +1,6 @@
 use core::panic;
 
-use itertools::max;
+
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use polars::prelude::*;
@@ -28,18 +28,18 @@ pub fn main() {
     /*교차 엔트로피 오차 */
     println!(
         "교차 엔트로피:{}",
-        cross_entropy_error(&y.into_dyn(), &t.clone().into_dyn())
+        cross_entropy_error(y.into_dyn(), t.clone().into_dyn())
     );
     let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
     println!(
         "교차 엔트로피:{}",
-        cross_entropy_error(&y.into_dyn(), &t.clone().into_dyn())
+        cross_entropy_error(y.into_dyn(), t.clone().into_dyn())
     ); //=>오차제곱합 와 일치
 
     let x_train = Mnist::load_mnist().x_train;
     let y_train = Mnist::load_mnist().y_train;
-    let x_test = Mnist::load_mnist().x_train;
-    let y_test = Mnist::load_mnist().y_train;
+    let x_test = Mnist::load_mnist().x_test;
+    let y_test = Mnist::load_mnist().y_test;
     println!("X train Shape{:?}", x_train.clone().shape()); //60000,784
     println!("Y train Shape{:?}", y_train.clone().shape()); //60000 10
 
@@ -55,7 +55,7 @@ pub fn main() {
     println!("{:?}", random_choice(60000, 10));
     println!(
         "cross:{:?}",
-        cross_entropy_error(&y_train.clone().into_dyn(), &x_train.clone().into_dyn())
+        cross_entropy_error(y_train.clone().into_dyn(), x_train.clone().into_dyn())
     );
 
     /*미분
@@ -80,8 +80,8 @@ pub fn main() {
     println!("편미분:{}", numerical_diff(function_tmp2, 4.0));
     /*gradient */
     println!(
-        "{}",
-        numerical_gradient(function_2, arr1(&[3.0, 0.0]).into_dyn())
+        "numerical_gradient:{}",
+        numerical_gradient(function_2, arr1(&[3.0, 4.0]).into_dyn())
     );
 
     let init_x = arr1(&[-3.0, 4.0]);
@@ -118,46 +118,62 @@ pub fn main() {
         "loss:{:?}",
         SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
     );
-    println!("{}",arr1(&[1f64,0f64])-arr1(&[2f64]));
+    println!("{}", arr1(&[1f64, 0f64]) - arr1(&[2f64]));
     //하이퍼 파라미터
     let iter_num = 10000; //반복횟수
     let train_size = x_train.clone().shape()[0];
     let batch_size = 100; //미니배치 사이즈
     let learning_rate = 0.1;
-    let mut network = TwoLayerNet::new(784, 60, 10, 0.01);
-    let mut train_loss_list:Vec<f64>=vec![];
-    let mut train_acc_list:Vec<f64>= vec![];
-    let mut test_acc_list:Vec<f64>= vec![];
-    let mut iter_per_epoch  = usize::max(train_size/batch_size, 1);
+    let mut network = TwoLayerNet::new(784, 50, 10, 0.01);
+    let mut train_loss_list: Vec<f64> = vec![];
+    let mut train_acc_list: Vec<f64> = vec![];
+    let mut test_acc_list: Vec<f64> = vec![];
+    let  iter_per_epoch = usize::max(train_size / batch_size, 1);
+
+
+
+    let y= arr1(&[0.0,1.0,2.0,3.0,4.0]);
+    let t=arr1(&[2.0,7.0,0.0,9.0,4.0]);
+    println!("{}",cross_entropy_error(y.into_dyn(), t.into_dyn()));
     for i in 0..iter_num {
         //미니배치 획득
         let batch_mask = random_choice(train_size, batch_size);
-        let x_batch= x_train.clone().select(Axis(0), &batch_mask);
-        let t_batch= y_train.clone().select(Axis(0), &batch_mask);
+        let x_batch = x_train.clone().select(Axis(0), &batch_mask);
+        let t_batch = y_train.clone().select(Axis(0), &batch_mask);
 
+        //기울기 계산
+        let (w1, w2, b1, b2) = network
+            .clone()
+            .numerical_gradient(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
 
-         //기울기 계산
-        let  (w1, w2, b1, b2) = network.clone().numerical_gradient(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
-          
-    
         network.w1 -= &(w1.into_dimensionality::<Ix2>().unwrap() * learning_rate);
         network.w2 -= &(w2.into_dimensionality::<Ix2>().unwrap() * learning_rate);
         network.b1 -= &(b1.into_dimensionality::<Ix1>().unwrap() * learning_rate);
         network.b2 -= &(b2.into_dimensionality::<Ix1>().unwrap() * learning_rate);
 
-
-         //매개변수 갱신
-         let loss = network.clone().loss(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
-         train_loss_list.push(loss);
-         //학습 경과기록
-
-         if i % iter_per_epoch ==0{
-            let train_acc = network.accuracy(x_train.into_dyn(), y_train.into_dyn());
-            let test_acc = network.accuracy(x_test, y_test);
-         }
-
-       
+        //매개변수 갱신
+        println!("{}","매개변수");
+        let loss = network
+            .clone()
+            .loss(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
+        train_loss_list.push(loss);
+        //학습 경과기록
+        //1 epoch당 정확도 계싼
+        println!("{}","애포크시작");
+        // if i % iter_per_epoch == 0 {
+        //     println!("{},{}",x_train.ndim(),y_train.ndim());
+        //     let train_acc = network
+        //         .clone()
+        //         .accuracy(x_train.clone().into_dyn(), y_train.clone().into_dyn());
           
+        //     let test_acc = network
+        //         .clone()
+        //         .accuracy(x_test.clone().into_dyn(), y_test.clone().into_dyn());
+        //     train_acc_list.push(train_acc);
+        //     test_acc_list.push(test_acc);
+        //     println!("train_acc:{},test_acc:{}", train_acc, test_acc);
+        // }
+        println!("{:?}",train_loss_list);
     }
 }
 
@@ -169,70 +185,60 @@ fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
         .sum::<f64>();
     0.5 * squared_diff
 }
-/*미해결 */
-fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
-    let rank = y.ndim();
+/*해결 */
+fn cross_entropy_error(y: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
     let delta = 1e-7;
-    match rank {
+    match y.ndim() {
         1 => {
-            let t = t
+            if t.ndim()==1{
+                let y = y
                 .clone()
                 .into_dimensionality::<Ix1>()
-                .unwrap()
-                .into_shape((1, t.len()))
                 .unwrap();
-            let y = y
+                let t = t
                 .clone()
                 .into_dimensionality::<Ix1>()
-                .unwrap()
-                .into_shape((1, y.len()))
-                .unwrap();
-            //더하기
-            let y = y.mapv(|val| val + delta);
+                .unwrap().into_shape((1,t.len())).unwrap();
 
-            let mut errors = Vec::new();
-            for (y_row, t_row) in y.outer_iter().zip(t.outer_iter()) {
-                let error = -y_row
+                let batch_size = y.shape()[0] as f64;
+                let y = y
                     .iter()
-                    .zip(t_row.iter())
-                    .map(|(&y_i, &t_i)| t_i * y_i.ln())
+                    .zip(t.iter())
+                    .map(|(&y, &t)| t * (y + delta).ln())
                     .sum::<f64>();
-                errors.push(error);
+               - y / batch_size
+          
+            }else{
+                let y = y
+                .clone()
+                .into_dimensionality::<Ix1>()
+                .unwrap();
+                let t = t
+                .clone()
+                .into_dimensionality::<Ix2>()
+                .unwrap().into_shape((1,t.len())).unwrap();
+          
+                let batch_size = y.shape()[0] as f64;
+                let y = y
+                    .iter()
+                    .zip(t.iter())
+                    .map(|(&y, &t)| t * (y + delta).ln())
+                    .sum::<f64>();
+                -  y / batch_size
             }
+   
 
-            let batch_size = y.shape()[0] as f64;
-
-            let total_error: f64 = errors.iter().sum();
-
-            total_error / batch_size
         }
         2 => {
-            let t = t
-                .clone()
-                .into_dimensionality::<Ix2>()
-                .unwrap()
-                .into_shape((1, t.len()))
-                .unwrap();
+            let t = t.clone().into_dimensionality::<Ix2>().unwrap();
+            let y = y.clone().into_dimensionality::<Ix2>().unwrap();
+            let batch_size = y.shape()[0] as f64;
             let y = y
-                .clone()
-                .into_dimensionality::<Ix2>()
-                .unwrap()
-                .into_shape((1, y.len()))
-                .unwrap();
-            let delta = 1e-7;
-            let neg_sum_log_y: f64 = y
-                .outer_iter()
-                .zip(t.outer_iter())
-                .map(|(y_row, t_row)| {
-                    -y_row
-                        .iter()
-                        .zip(t_row.iter())
-                        .map(|(&y_i, &t_i)| t_i * (y_i + delta).ln())
-                        .sum::<f64>()
-                })
-                .sum();
-
-            neg_sum_log_y / y.shape()[0] as f64
+                .iter()
+                .zip(t.iter())
+                .map(|(&y, &t)| t * (y + delta).ln())
+                .sum::<f64>();
+            y / batch_size
         }
         _ => {
             panic!("rank error")
@@ -257,7 +263,7 @@ fn function_2(x: ArrayD<f64>) -> f64 {
     match rank {
         1 => {
             let x = x.into_dimensionality::<Ix1>().unwrap();
-            return x[0].powf(2.0) + x[1].powf(2.0);
+            x[0].powf(2.0) + x[1].powf(2.0)
         }
         _ => {
             panic!("erorr이지")
@@ -288,12 +294,12 @@ where
     F: Fn(ArrayD<f64>) -> f64,
 {
     let rank = x.ndim(); //rank설정
-    let h = 1e-4;
+    let h = 1e-4;//0.0001
 
     match rank {
         1 => {
             let mut x = x.clone().into_dimensionality::<Ix1>().unwrap();
-            let mut grad: Array1<f64> = Array::zeros(x.raw_dim()); //x와 형상이 같은 배열을 생성
+            let mut grad: Array1<f64> = Array::zeros(x.len()); //x와 형상이 같은 배열을 생성
             for idx in 0..x.len() {
                 let tmp_val = x[idx];
                 //f(x+h)계산
@@ -389,13 +395,13 @@ impl SimpleNet {
             1 => {
                 let z = self.predict(x.clone());
                 let y = softmax(z);
-                let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+                let loss = cross_entropy_error(y.into_dyn(), t.into_dyn());
                 loss
             }
             2 => {
                 let z = self.predict(x.clone());
                 let y = softmax(z);
-                let loss = cross_entropy_error(&y.into_dyn(), &t.into_dyn());
+                let loss = cross_entropy_error(y.into_dyn(), t.into_dyn());
                 loss
             }
             _ => {
@@ -444,8 +450,8 @@ impl TwoLayerNet {
         weight_init_std: f64,
     ) -> TwoLayerNet {
         let mut rng = rand::thread_rng();
-        let mut matrix = Array2::<f64>::zeros((input_size, hidden_size));
         //가중치
+    
         TwoLayerNet {
             w1: weight_init_std
                 * fill_with_random(
@@ -460,28 +466,44 @@ impl TwoLayerNet {
 
             b1: Array1::<f64>::zeros(hidden_size),
 
-            b2: Array1::<f64>::zeros(hidden_size),
+            b2: Array1::<f64>::zeros(output_size),
         }
     }
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
+
+        println!("predict1{}",x);
         let (w1, w2) = (self.w1, self.w2);
         let (b1, b2) = (self.b1, self.b2);
-
-        let rank = x.ndim();
-
-        match rank {
+        println!("{}",w1);
+        println!("{}",x.ndim());
+        match x.ndim() {
             1 => {
                 let x = x.into_dimensionality::<Ix1>().unwrap();
                 let a1 = x.dot(&w1) + b1;
+                println!("여기1");
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix1>().unwrap();
                 let a2 = z1.dot(&w2) + b2;
                 softmax(a2.into_dyn())
             }
             2 => {
                 let x = x.into_dimensionality::<Ix2>().unwrap();
+
+                println!("{}",x);
+
                 let a1 = x.dot(&w1) + b1;
+
+                println!("a1:{}",x);
+
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix2>().unwrap();
+                println!("z1{}",z1);
+
+                println!("여기3");
+                println!("{},{}",z1.ndim(),w2.ndim());
+                println!("{}",z1);
                 let a2 = z1.dot(&w2) + b2;
+                println!("a2{}",a2);
+
+                println!("여기4");
                 softmax(a2.into_dyn())
             }
             _ => {
@@ -491,13 +513,14 @@ impl TwoLayerNet {
     }
 
     pub fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-        cross_entropy_error(&x.into_dyn(), &t.into_dyn())
+        cross_entropy_error(x.into_dyn(), t.into_dyn())
     }
     fn accuracy(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         let rank = x.ndim();
-
+       println!("{},{}",x.ndim(),t.ndim());
         match rank {
             1 => {
+                
                 let x = x.into_dimensionality::<Ix1>().unwrap();
                 let y = self
                     .predict(x.clone().into_dyn())
@@ -513,7 +536,11 @@ impl TwoLayerNet {
                 accuracy
             }
             2 => {
+                println!("{}",x);
                 let y = self.predict(x.clone().into_dyn());
+                println!("{}",y);
+                println!("여기3");
+
                 let y_argmax = y
                     .into_dimensionality::<Ix2>()
                     .unwrap()
@@ -542,24 +569,24 @@ impl TwoLayerNet {
     /*가중치 매개변수의 기울기를 구하기 */
     fn numerical_gradient(
         self,
-        x: ArrayD<f64>,
+        _x: ArrayD<f64>,
         t: ArrayD<f64>,
     ) -> (ArrayD<f64>, ArrayD<f64>, ArrayD<f64>, ArrayD<f64>) {
         let (w1, w2, b1, b2) = (
             numerical_gradient(
-                |x| self.clone().loss(x.clone(), t.clone()),
+                |_x| self.clone().loss(_x.clone(), t.clone()),
                 self.clone().w1.into_dyn(),
             ),
             numerical_gradient(
-                |x| self.clone().loss(x.clone(), t.clone()),
+                |_x| self.clone().loss(_x.clone(), t.clone()),
                 self.clone().w2.into_dyn(),
             ),
             numerical_gradient(
-                |x| self.clone().loss(x.clone(), t.clone()),
+                |_x| self.clone().loss(_x.clone(), t.clone()),
                 self.clone().b1.into_dyn(),
             ),
             numerical_gradient(
-                |x| self.clone().loss(x.clone(), t.clone()),
+                |_x| self.clone().loss(_x.clone(), t.clone()),
                 self.clone().b2.into_dyn(),
             ),
         );
@@ -579,13 +606,27 @@ fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64>
     view.to_owned()
 }
 //시그모이드
-fn sigmoid(x: ArrayD<f64>) -> ArrayD<f64> {
-    x.mapv(|element| 1.0 / (1.0 + (-element).exp()))
+fn sigmoid(x: ArrayD<f64>) -> ArrayD<f64> {     
+    match x.ndim() {
+        1=>{
+            x.into_dimensionality::<Ix1>().unwrap().mapv(|element| 1.0 / (1.0 + (-element).exp())).into_dyn()
+        },
+        2=>{
+            x.into_dimensionality::<Ix2>().unwrap().mapv(|element| 1.0 / (1.0 + (-element).exp())).into_dyn()
+        }
+        _=>{
+            panic!("rank error");
+        }
+    }
 }
+
+
 
 struct Mnist {
     x_train: Array2<f64>,
     y_train: Array2<f64>,
+    x_test: Array2<f64>,
+    y_test: Array2<f64>,
 }
 impl Mnist {
     fn load_mnist() -> Mnist {
@@ -603,6 +644,26 @@ impl Mnist {
             .unwrap()
             .to_ndarray::<Float64Type>(IndexOrder::Fortran)
             .unwrap();
-        Mnist { x_train, y_train }
+        let x_test = CsvReader::from_path("./dataset/mnist/x_test.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap()
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+        let y_test = CsvReader::from_path("./dataset/mnist/t_test.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap()
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+
+        Mnist {
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+        }
     }
 }
