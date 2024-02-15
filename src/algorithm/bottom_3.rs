@@ -37,10 +37,10 @@ pub fn main() {
 
     let x_train = Mnist::load_mnist().x_train;
     let y_train = Mnist::load_mnist().y_train;
-    println!("X train Shape{:?}", x_train.shape()); //60000,784
-    println!("Y train Shape{:?}", y_train.shape()); //60000 10
+    println!("X train Shape{:?}", x_train.clone().shape()); //60000,784
+    println!("Y train Shape{:?}", y_train.clone().shape()); //60000 10
 
-    let train_size = x_train.shape()[0]; //trian_size
+    let train_size = x_train.clone().shape()[0]; //trian_size
     let batch_size = 10;
     let batch_mask = random_choice(train_size, batch_size); //무작위로 원하는 개수만 꺼내기 =>무작위로 10개씩
     println!("무작위{:?}", batch_mask);
@@ -52,7 +52,7 @@ pub fn main() {
     println!("{:?}", random_choice(60000, 10));
     println!(
         "cross:{:?}",
-        cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
+        cross_entropy_error(&y_train.into_dyn(), &x_train.clone().into_dyn())
     );
 
     /*미분
@@ -115,6 +115,21 @@ pub fn main() {
         "loss:{:?}",
         SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
     );
+
+   
+   
+   //하이퍼 파라미터
+   let iter_num=10000;//반복횟수
+   let train_size= x_train.clone().shape()[0];
+   let batch_size =100; //미니배치 사이즈
+   let learning_rate =0.1;
+   let network = TwoLayerNet::new(784,60,10,0.01);
+//    for i in 0..iter_num{
+//        //미니배치 획득
+//        let batch_mask = random_choice(train_size, batch_size);
+//        let x_batch = x_train[batch_mask];
+//    }
+
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
@@ -394,7 +409,6 @@ struct TwoLayerNet {
 }
 impl TwoLayerNet {
     fn new(
-        self,
         input_size: usize,
         hidden_size: usize,
         output_size: usize,
@@ -496,23 +510,34 @@ impl TwoLayerNet {
             }
         }
     }
-
+    /*가중치 매개변수의 기울기를 구하기 */
     fn numerical_gradient(
         self,
         x: ArrayD<f64>,
         t: ArrayD<f64>,
-    ) -> (ArrayD<f64>, Array2<f64>, Array2<f64>, Array2<f64>) {
+    ) -> (ArrayD<f64>, ArrayD<f64>, ArrayD<f64>, ArrayD<f64>) {
         let (w1, w2, b1, b2) = (
             numerical_gradient(
                 |x| self.clone().loss(x.clone(), t.clone()),
                 self.clone().w1.into_dyn(),
             ),
-            arr2(&[[1.0]]),
-            arr2(&[[1.0]]),
-            arr2(&[[1.0]]),
+            numerical_gradient(
+                |x| self.clone().loss(x.clone(), t.clone()),
+                self.clone().w2.into_dyn(),
+            ),
+            numerical_gradient(
+                |x| self.clone().loss(x.clone(), t.clone()),
+                self.clone().b1.into_dyn(),
+            ),
+            numerical_gradient(
+                |x| self.clone().loss(x.clone(), t.clone()),
+                self.clone().b2.into_dyn(),
+            ),
         );
         (w1, w2, b1, b2)
     }
+    /* numerical_gradient의 성능 개선판*/
+    fn gradient(self, x: ArrayD<f64>, t: ArrayD<f64>) {}
 }
 fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64> {
     let mut view = matrix.view_mut();
