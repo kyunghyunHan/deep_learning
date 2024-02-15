@@ -1,5 +1,6 @@
 use core::panic;
 
+use itertools::max;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use polars::prelude::*;
@@ -37,6 +38,8 @@ pub fn main() {
 
     let x_train = Mnist::load_mnist().x_train;
     let y_train = Mnist::load_mnist().y_train;
+    let x_test = Mnist::load_mnist().x_train;
+    let y_test = Mnist::load_mnist().y_train;
     println!("X train Shape{:?}", x_train.clone().shape()); //60000,784
     println!("Y train Shape{:?}", y_train.clone().shape()); //60000 10
 
@@ -52,7 +55,7 @@ pub fn main() {
     println!("{:?}", random_choice(60000, 10));
     println!(
         "cross:{:?}",
-        cross_entropy_error(&y_train.into_dyn(), &x_train.clone().into_dyn())
+        cross_entropy_error(&y_train.clone().into_dyn(), &x_train.clone().into_dyn())
     );
 
     /*미분
@@ -115,21 +118,47 @@ pub fn main() {
         "loss:{:?}",
         SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
     );
+    println!("{}",arr1(&[1f64,0f64])-arr1(&[2f64]));
+    //하이퍼 파라미터
+    let iter_num = 10000; //반복횟수
+    let train_size = x_train.clone().shape()[0];
+    let batch_size = 100; //미니배치 사이즈
+    let learning_rate = 0.1;
+    let mut network = TwoLayerNet::new(784, 60, 10, 0.01);
+    let mut train_loss_list:Vec<f64>=vec![];
+    let mut train_acc_list:Vec<f64>= vec![];
+    let mut test_acc_list:Vec<f64>= vec![];
+    let mut iter_per_epoch  = usize::max(train_size/batch_size, 1);
+    for i in 0..iter_num {
+        //미니배치 획득
+        let batch_mask = random_choice(train_size, batch_size);
+        let x_batch= x_train.clone().select(Axis(0), &batch_mask);
+        let t_batch= y_train.clone().select(Axis(0), &batch_mask);
 
-   
-   
-   //하이퍼 파라미터
-   let iter_num=10000;//반복횟수
-   let train_size= x_train.clone().shape()[0];
-   let batch_size =100; //미니배치 사이즈
-   let learning_rate =0.1;
-   let network = TwoLayerNet::new(784,60,10,0.01);
-//    for i in 0..iter_num{
-//        //미니배치 획득
-//        let batch_mask = random_choice(train_size, batch_size);
-//        let x_batch = x_train[batch_mask];
-//    }
 
+         //기울기 계산
+        let  (w1, w2, b1, b2) = network.clone().numerical_gradient(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
+          
+    
+        network.w1 -= &(w1.into_dimensionality::<Ix2>().unwrap() * learning_rate);
+        network.w2 -= &(w2.into_dimensionality::<Ix2>().unwrap() * learning_rate);
+        network.b1 -= &(b1.into_dimensionality::<Ix1>().unwrap() * learning_rate);
+        network.b2 -= &(b2.into_dimensionality::<Ix1>().unwrap() * learning_rate);
+
+
+         //매개변수 갱신
+         let loss = network.clone().loss(x_batch.clone().into_dyn(), t_batch.clone().into_dyn());
+         train_loss_list.push(loss);
+         //학습 경과기록
+
+         if i % iter_per_epoch ==0{
+            let train_acc = network.accuracy(x_train.into_dyn(), y_train.into_dyn());
+            let test_acc = network.accuracy(x_test, y_test);
+         }
+
+       
+          
+    }
 }
 
 fn sum_squares_error(y: &Array1<f64>, t: &Array1<f64>) -> f64 {
