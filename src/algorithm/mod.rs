@@ -8,3 +8,6 @@ pub mod bottom_6;
 pub mod bottom_7;
 pub mod bottom_8;
 pub mod weight;
+pub mod two_layer_net;
+pub mod simple_net;
+pub mod utils;
