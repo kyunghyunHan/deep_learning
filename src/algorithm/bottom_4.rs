@@ -1,39 +1,5 @@
 /*오차역전파법 */
-use std::time::Instant;
-
-struct MulLayer {
-    x: Option<f64>,
-    y: Option<f64>,
-}
-impl MulLayer {
-    fn forwoad(&mut self, x: f64, y: f64) -> f64 {
-        self.x = Some(x);
-        self.y = Some(y);
-        let out = x * y;
-        out
-    }
-    fn backward(self, dout: f64) -> (f64, f64) {
-        let dx = dout * self.y.unwrap();
-        let dy = dout * self.x.unwrap();
-        (dx, dy)
-    }
-}
-
-struct AddLayer {
-    x: Option<f64>,
-    y: Option<f64>,
-}
-impl AddLayer {
-    fn forword(self, x: f64, y: f64) -> f64 {
-        let out = x + y;
-        out
-    }
-    fn backward(self, dout: f64) -> (f64, f64) {
-        let dx = dout * 1f64;
-        let dy = dout * 1f64;
-        (dx, dy)
-    }
-}
+use ndarray::prelude::*;
 
 struct ReLU {
     mask: Option<f64>,
@@ -65,22 +31,22 @@ impl SoftmaxWithLoss {
     fn backward() {}
 }
 
-pub fn main() {
-    let apple = 100.0;
-    let apple_num = 2.0;
-    let tax = 1.1;
-    let mut mul_apple_layer = MulLayer { x: None, y: None };
-    let mut mul_tax_layer = MulLayer { x: None, y: None };
+// pub fn main() {
+//     let apple = 100.0;
+//     let apple_num = 2.0;
+//     let tax = 1.1;
+//     let mut mul_apple_layer = MulLayer { x: None, y: None };
+//     let mut mul_tax_layer = MulLayer { x: None, y: None };
 
-    let apple_price = mul_apple_layer.forwoad(apple, apple_num);
-    let price = mul_tax_layer.forwoad(apple_price, tax);
+//     let apple_price = mul_apple_layer.forwoad(apple, apple_num);
+//     let price = mul_tax_layer.forwoad(apple_price, tax);
 
-    println!("{}", price);
+//     println!("{}", price);
 
-    //역전파
-    let dprice = 1f64;
-    let (dapple_price, dtax) = mul_tax_layer.backward(dprice);
-    let (dapple, dapple_num) = mul_apple_layer.backward(dapple_price);
+//     //역전파
+//     let dprice = 1f64;
+//     let (dapple_price, dtax) = mul_tax_layer.backward(dprice);
+//     let (dapple, dapple_num) = mul_apple_layer.backward(dapple_price);
 
-    println!("{} {} {}", dapple, dapple_num, dtax);
-}
+//     println!("{} {} {}", dapple, dapple_num, dtax);
+// }

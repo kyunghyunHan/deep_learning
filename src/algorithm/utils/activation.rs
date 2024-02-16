@@ -3,7 +3,6 @@ use ndarray_stats::QuantileExt;
 
 pub fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
     let rank = a.ndim();
-    println!("{}", rank);
     if rank == 1 {
         let a = a.clone().into_dimensionality::<Ix1>().unwrap();
         let c: f64 = a[a.argmax().unwrap()];
@@ -22,16 +21,6 @@ pub fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
 
 //시그모이드
 pub fn sigmoid(x: ArrayD<f64>) -> ArrayD<f64> {     
-    match x.ndim() {
-        1=>{
-            x.into_dimensionality::<Ix1>().unwrap().mapv(|element| 1.0 / (1.0 + (-element).exp())).into_dyn()
-        },
-        2=>{
-            x.into_dimensionality::<Ix2>().unwrap().mapv(|element| 1.0 / (1.0 + (-element).exp())).into_dyn()
-        }
-        _=>{
-            panic!("rank error");
-        }
-    }
+    x.mapv(|element| 1.0 / (1.0 + (-element).exp())).into_dyn()
 }
 

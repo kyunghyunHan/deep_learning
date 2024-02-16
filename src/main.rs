@@ -5,13 +5,17 @@ mod university;
 mod math;
 mod burn_book;
 use rayon::prelude::*;
+use ndarray::prelude::*;
 mod boston_price;
 fn main(){
+    
+//    let mut arr= arr1(&[1,0]);
 
-
+//    arr[0] =2;
+//    println!("{}",arr);
     // algorithm::bottom_0::main();
     // algorithm::bottom_1::main();
-    algorithm::bottom_3::main();
+    algorithm::two_layer_net::main();
     // boston_price::model::main();
     /*===============fast_depp================ */
     // fast_deep::fast_deep01::main();

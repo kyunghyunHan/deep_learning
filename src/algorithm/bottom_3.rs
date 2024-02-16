@@ -23,23 +23,23 @@ pub fn main() {
      */
     //오차제곱합
     let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
-    let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).into_dyn();
     //0일 확률 0.1,1일 확률 0.05, 1은 정답 레이블의 위치를 가르치는 원소 1 그외에는 0으로 표 기 => 원핫인코딩
-    // y= 2일 확률이 제일 높다고 판단함
-    println!("오차제곱합:{}", sum_squares_error(&y, &t));
-    //0.09750000000000003
-    let y = arr1(&[0.1, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.6, 0.0, 0.0]); //소프트 맥스 함수의 출력
-    println!("오차제곱합:{}", sum_squares_error(&y, &t));
-    //0.5974999999999999 =? 7이 가장 높다고 추정함=>
+    // // y= 2일 확률이 제일 높다고 판단함
+    // println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    // //0.09750000000000003
+    // let y = arr1(&[0.1, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.6, 0.0, 0.0]); //소프트 맥스 함수의 출력
+    // println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    // //0.5974999999999999 =? 7이 가장 높다고 추정함=>
     /*교차 엔트로피 오차 */
     println!(
         "교차 엔트로피:{}",
-        cross_entropy_error(y.into_dyn(), t.clone().into_dyn())
+        cross_entropy_error(&y.into_dyn(), &t)
     );
     let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
     println!(
         "교차 엔트로피:{}",
-        cross_entropy_error(y.into_dyn(), t.clone().into_dyn())
+        cross_entropy_error(&y.into_dyn(), &t)
     ); //=>오차제곱합 와 일치
 
     let x_train = load_mnist().x_train;
@@ -61,7 +61,7 @@ pub fn main() {
     println!("{:?}", random_choice(60000, 10));
     println!(
         "cross:{:?}",
-        cross_entropy_error(y_train.clone().into_dyn(), x_train.clone().into_dyn())
+        cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
     );
 
     /*미분
@@ -112,11 +112,11 @@ pub fn main() {
 fn function_1(x: f64) -> f64 {
     0.01 * x.powf(2.0) + 0.1 * x
 }
-fn function_2(x: ArrayD<f64>) -> f64 {
+fn function_2(x: &ArrayD<f64>) -> f64 {
     let rank = x.ndim();
     match rank {
         1 => {
-            let x = x.into_dimensionality::<Ix1>().unwrap();
+            let x = x.clone().into_dimensionality::<Ix1>().unwrap();
             x[0].powf(2.0) + x[1].powf(2.0)
         }
         _ => {

@@ -50,24 +50,10 @@ impl SimpleNet {
     }
 
     fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-        let rank = x.ndim();
-        match rank {
-            1 => {
-                let z = self.predict(x.clone());
-                let y = softmax(z);
-                let loss = cross_entropy_error(y.into_dyn(), t.into_dyn());
-                loss
-            }
-            2 => {
-                let z = self.predict(x.clone());
-                let y = softmax(z);
-                let loss = cross_entropy_error(y.into_dyn(), t.into_dyn());
-                loss
-            }
-            _ => {
-                panic!("not rank")
-            }
-        }
+        let z = self.predict(x.clone());
+        let y = softmax(z);
+        let loss = cross_entropy_error(&y.into_dyn(), &t);
+        loss
     }
     fn f_functsion(w: ArrayD<f64>) -> f64 {
         let x: ArrayD<f64> = Default::default();
@@ -87,7 +73,7 @@ pub fn main(){
     println!("가중치 매개변수:{:?}", net);
     let x = arr1(&[0.6, 0.9]);
     let p = net.clone().predict(x.clone().into_dyn());
-    println!("{:?}", p);
+    println!("predict{:?}", p);
     println!(
         "최대값의 인덱스:{}",
         p.into_dimensionality::<Ix1>().unwrap().argmax().unwrap()
@@ -99,5 +85,4 @@ pub fn main(){
         "loss:{:?}",
         SimpleNet::loss(net.clone(), x.clone().into_dyn(), t.into_dyn())
     );
-    println!("{}", arr1(&[1f64, 0f64]) - arr1(&[2f64]));
 }

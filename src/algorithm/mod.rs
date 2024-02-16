@@ -11,3 +11,5 @@ pub mod weight;
 pub mod two_layer_net;
 pub mod simple_net;
 pub mod utils;
+// pub mod mul_layer;
+pub mod add_layer;
