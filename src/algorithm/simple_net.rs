@@ -6,7 +6,7 @@ use super::utils::{
     activation::*,
     random::{fill_with_random,random_choice},
     mnist::load_mnist,
-    gradient_descent::{numerical_gradient,gradient_descent},
+    gradient_descent::{numerical_gradient},
     error::{cross_entropy_error,sum_squares_error}
 };
 #[derive(Debug, Clone)]

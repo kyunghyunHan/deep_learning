@@ -7,7 +7,7 @@ use rand::prelude::*;
 use super::utils::{
     random::{fill_with_random,random_choice},
     mnist::load_mnist,
-    gradient_descent::{numerical_gradient,gradient_descent},
+    gradient_descent::{numerical_gradient},
     error::{cross_entropy_error,sum_squares_error}
 };
 
@@ -85,24 +85,24 @@ pub fn main() {
     println!("편미분:{}", numerical_diff(function_tmp1, 3.0));
     println!("편미분:{}", numerical_diff(function_tmp2, 4.0));
     /*gradient */
-    println!(
-        "numerical_gradient:{}",
-        numerical_gradient(function_2, arr1(&[3.0, 4.0]).into_dyn())
-    );
+    // println!(
+    //     "numerical_gradient:{}",
+    //     // numerical_gradient(function_2, arr1(&[3.0, 4.0]).into_dyn())
+    // );
 
     let init_x = arr1(&[-3.0, 4.0]);
-    println!(
-        "gradient_descent:{}",
-        gradient_descent(function_2, init_x.into_dyn(), 0.1, 100)
-    );
-    println!(
-        "학습률이 너무 큰 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 10.0, 100)
-    );
-    println!(
-        "학습률이 너무 작은 예{}",
-        gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 1e-10, 100)
-    );
+    // println!(
+    //     "gradient_descent:{}",
+    //     gradient_descent(function_2, init_x.into_dyn(), 0.1, 100)
+    // );
+    // println!(
+    //     "학습률이 너무 큰 예{}",
+    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 10.0, 100)
+    // );
+    // println!(
+    //     "학습률이 너무 작은 예{}",
+    //     gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 1e-10, 100)
+    // );
 
    
   

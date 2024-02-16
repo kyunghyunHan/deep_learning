@@ -1,20 +1,20 @@
 use super::utils::{
     activation::*,
     error::{cross_entropy_error, sum_squares_error},
-    gradient_descent::{gradient_descent, numerical_gradient},
+    gradient_descent::numerical_gradient,
     mnist::load_mnist,
     random::{fill_with_random, random_choice},
 };
-use burn::nn::loss;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
-
+use std::cell::RefCell;
+use std::rc::Rc;
 #[derive(Clone)]
 struct TwoLayerNet {
-  pub   w1: Array2<f64>,
-  pub  w2: Array2<f64>,
-  pub  b1: Array1<f64>,
-  pub b2: Array1<f64>,
+    pub w1: ArrayD<f64>,
+    pub w2: ArrayD<f64>,
+    pub b1: ArrayD<f64>,
+    pub b2: ArrayD<f64>,
 }
 impl TwoLayerNet {
     fn new(
@@ -31,34 +31,36 @@ impl TwoLayerNet {
                 * fill_with_random(
                     &mut Array2::<f64>::zeros((input_size, hidden_size)),
                     &mut rng,
-                ),
+                )
+                .into_dyn(),
             w2: weight_init_std
                 * fill_with_random(
                     &mut Array2::<f64>::zeros((hidden_size, output_size)),
                     &mut rng,
-                ),
+                )
+                .into_dyn(),
 
-            b1: Array1::<f64>::zeros(hidden_size),
+            b1: Array1::<f64>::zeros(hidden_size).into_dyn(),
 
-            b2: Array1::<f64>::zeros(output_size),
+            b2: Array1::<f64>::zeros(output_size).into_dyn(),
         }
     }
     fn predict(&self, x: &ArrayD<f64>) -> ArrayD<f64> {
-        let (w1, w2) = (&self.w1, &self.w2);
-        let (b1, b2) = (&self.b1, &self.b2);
+        let (w1, w2) = (self.clone().w1, self.clone().w2);
+        let (b1, b2) = (self.clone().b1, self.clone().b2);
         match x.ndim() {
             1 => {
                 let x = x.clone().into_dimensionality::<Ix1>().unwrap();
-                let a1 = x.dot(w1) + b1;
+                let a1 = x.dot(&w1.into_dimensionality::<Ix2>().unwrap()) + b1;
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix1>().unwrap();
-                let a2 = z1.dot(w2) + b2;
+                let a2 = z1.dot(&w2.into_dimensionality::<Ix2>().unwrap()) + b2;
                 softmax(a2.into_dyn())
             }
             2 => {
                 let x = x.clone().into_dimensionality::<Ix2>().unwrap();
-                let a1 = x.dot(w1) + b1;
+                let a1 = x.dot(&w1.into_dimensionality::<Ix2>().unwrap()) + b1;
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix2>().unwrap();
-                let a2 = z1.dot(w2) + b2;
+                let a2 = z1.dot(&w2.into_dimensionality::<Ix2>().unwrap()) + b2;
                 softmax(a2.into_dyn())
             }
             _ => {
@@ -75,12 +77,14 @@ impl TwoLayerNet {
         let rank = x.ndim();
         match rank {
             1 => {
-                let y = self
-                    .predict(&x)
-                    .into_dimensionality::<Ix1>()
-                    .unwrap();
+                let y = self.predict(&x).into_dimensionality::<Ix1>().unwrap();
                 let y = y.clone().argmax().unwrap();
-                let t = t.clone().into_dimensionality::<Ix1>().unwrap().argmax().unwrap();
+                let t = t
+                    .clone()
+                    .into_dimensionality::<Ix1>()
+                    .unwrap()
+                    .argmax()
+                    .unwrap();
                 let accuracy = if y == t {
                     y as f64 + t as f64 / x.shape()[0] as f64
                 } else {
@@ -97,7 +101,8 @@ impl TwoLayerNet {
                     .outer_iter()
                     .map(|row| row.argmax().unwrap())
                     .collect::<Vec<_>>();
-                let t_argmax = t.clone()
+                let t_argmax = t
+                    .clone()
                     .into_dimensionality::<Ix2>()
                     .unwrap()
                     .outer_iter()
@@ -118,31 +123,35 @@ impl TwoLayerNet {
     }
     /*가중치 매개변수의 기울기를 구하기 */
     fn numerical_gradient(
-         self,
-        _x: &ArrayD<f64>,
+        &mut self,
+        x: &ArrayD<f64>,
         t: &ArrayD<f64>,
     ) -> (ArrayD<f64>, ArrayD<f64>, ArrayD<f64>, ArrayD<f64>) {
+        let p_net = self as *const TwoLayerNet;
+        let f = || unsafe {
+            (*p_net).loss(x, t)
+        };
+            let (w1, w2, b1, b2) = (
+                numerical_gradient(
+                    &f,
+                    &mut (*p_net.borrow_mut()).w1,
+                ),
+                numerical_gradient(
+                    |_| (*p_net.borrow_mut()).loss(x, t),
+                    &mut (*p_net.borrow_mut()).w2,
+                ),
+                numerical_gradient(
+                    |_| (*p_net.borrow_mut()).loss(x, t),
+                    &mut (*p_net.borrow_mut()).b1,
+                ),
+                numerical_gradient(
+                    |_| (*p_net.borrow_mut()).loss(x, t),
+                    &mut (*p_net.borrow_mut()).b2,
+                ),
+            );
 
-        let (w1, w2, b1, b2) = (
-            numerical_gradient(
-                |_| self.clone().loss(_x, t),
-                self.clone().w1.into_dyn(),
-            ),
-            numerical_gradient(
-                |_| self.clone().loss(_x, t),
-                self.clone().w2.into_dyn(),
-            ),
-            numerical_gradient(
-                |_| self.clone().loss(_x, t),
-                self.clone().b1.into_dyn(),
-            ),
-            numerical_gradient(
-                |_| self.clone().loss(_x, t),
-                self.clone().b2.into_dyn(),
-            ),
-        );
-
-        (w1, w2, b1, b2)
+            (w1, w2, b1, b2)
+       
     }
     /* numerical_gradient의 성능 개선판*/
     fn gradient(self, x: ArrayD<f64>, t: ArrayD<f64>) {}
@@ -155,40 +164,35 @@ pub fn main() {
     // let x_test = mnist.x_test;
     // let y_test =mnist.y_test;
 
-    println!("데이터");
     //하이퍼 파라미터
     let iter_num = 10000; //반복횟수
-    let train_size = &x_train.shape()[0];
+    let train_size = x_train.clone().shape()[0];
     let batch_size = 100; //미니배치 사이즈
     let learning_rate = 0.1;
 
     let mut network = TwoLayerNet::new(784, 50, 10, 0.01);
-
+    //저장공간
     let mut train_loss_list: Vec<f64> = vec![];
     let mut train_acc_list: Vec<f64> = vec![];
     let mut test_acc_list: Vec<f64> = vec![];
-    let iter_per_epoch = usize::max(train_size / batch_size, 1);
 
+    let iter_per_epoch = usize::max(train_size / batch_size, 1);
+    //여기부터 문제
     for i in 0..iter_num {
         //미니배치 획득
-        let batch_mask = random_choice(*train_size, batch_size);
+        let batch_mask = random_choice(train_size, batch_size);
         let x_batch = x_train.clone().select(Axis(0), &batch_mask).into_dyn();
         let t_batch = y_train.clone().select(Axis(0), &batch_mask).into_dyn();
 
         //기울기 계산
-        let (w1, w2, b1, b2) = network
-            .clone()
-            .numerical_gradient(&x_batch, &t_batch);
-        println!("{}", "안대나1");
-        network.w1 -= &(learning_rate * w1.into_dimensionality::<Ix2>().unwrap());
-        network.w2 -= &(learning_rate * w2.into_dimensionality::<Ix2>().unwrap());
-        network.b1 -= &(learning_rate * b1.into_dimensionality::<Ix1>().unwrap());
-        network.b2 -= &(learning_rate * b2.into_dimensionality::<Ix1>().unwrap());
-        println!("{}", "안대나2");
+        //여기부터 문제
+        let (w1, w2, b1, b2) = network.numerical_gradient(&x_batch, &t_batch);
+        network.w1 -= &(learning_rate * w1);
+        network.w2 -= &(learning_rate * w2);
+        network.b1 -= &(learning_rate * b1);
+        network.b2 -= &(learning_rate * b2);
         //매개변수 갱신
-        let loss = network
-            .clone()
-            .loss(&x_batch, &t_batch);
+        let loss = network.loss(&x_batch, &t_batch);
         train_loss_list.push(loss);
         //학습 경과기록
         //1 epoch당 정확도 계싼
