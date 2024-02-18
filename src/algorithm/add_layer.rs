@@ -1,15 +1,17 @@
-struct AddLayer {
-    x: Option<f64>,
-    y: Option<f64>,
+pub struct AddLayer{
+    x:Option<f64>,
+    y:Option<f64>
 }
-impl AddLayer {
-    fn forword(self, x: f64, y: f64) -> f64 {
-        let out = x + y;
+
+impl AddLayer{
+    pub fn new(){}
+    pub fn forward(x:Option<f64>,y:Option<f64>)->f64{
+        let out = x.unwrap()+y.unwrap();
         out
     }
-    fn backward(self, dout: f64) -> (f64, f64) {
-        let dx = dout * 1f64;
-        let dy = dout * 1f64;
-        (dx, dy)
+    pub fn backward(self,dout:Option<f64>)->(Option<f64>,Option<f64>){
+        let dx= dout.unwrap()*1f64;
+        let dy = dout.unwrap()*1f64;
+        (Some(dx),Some(dy))
     }
 }

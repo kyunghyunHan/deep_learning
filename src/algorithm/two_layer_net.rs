@@ -188,6 +188,7 @@ pub fn main() {
         train_loss_list.push(loss);
         //학습 경과기록
         //1 epoch당 정확도 계싼
+        println!("  loss: {}", loss);
         println!("에포크 시작");
         if i % iter_per_epoch == 0 {
             let train_acc = network
