@@ -132,22 +132,14 @@ impl TwoLayerNet {
             (*p_net).loss(x, t)
         };
             let (w1, w2, b1, b2) = (
-                numerical_gradient(
-                    &f,
-                    &mut (*p_net.borrow_mut()).w1,
-                ),
-                numerical_gradient(
-                    |_| (*p_net.borrow_mut()).loss(x, t),
-                    &mut (*p_net.borrow_mut()).w2,
-                ),
-                numerical_gradient(
-                    |_| (*p_net.borrow_mut()).loss(x, t),
-                    &mut (*p_net.borrow_mut()).b1,
-                ),
-                numerical_gradient(
-                    |_| (*p_net.borrow_mut()).loss(x, t),
-                    &mut (*p_net.borrow_mut()).b2,
-                ),
+                numerical_gradient(&f, &mut self.w1),
+
+                numerical_gradient(&f, &mut self.w2),
+
+                numerical_gradient(&f, &mut self.b1),
+
+                numerical_gradient(&f, &mut self.b2),
+
             );
 
             (w1, w2, b1, b2)
