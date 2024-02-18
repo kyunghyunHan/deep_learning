@@ -40,9 +40,9 @@ impl TwoLayerNet {
                 )
                 .into_dyn(),
 
-            b1: Array1::<f64>::zeros(hidden_size).into_dyn(),
+            b1: Array2::<f64>::zeros((1,hidden_size)).into_dyn(),
 
-            b2: Array1::<f64>::zeros(output_size).into_dyn(),
+            b2: Array2::<f64>::zeros((1,output_size)).into_dyn(),
         }
     }
     fn predict(&self, x: &ArrayD<f64>) -> ArrayD<f64> {

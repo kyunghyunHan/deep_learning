@@ -22,7 +22,6 @@ where
     let h = 1e-4;//0.0001
    
     let mut x = x.clone().into_dimensionality::<Ix2>().unwrap();
-    println!("{}",x);
     let mut grad: Array2<f64> = Array::zeros(x.raw_dim()); //x와 형상이 같은 배열을 생성
     for (x, o) in x.iter_mut().zip(grad.iter_mut()) {
         let tmp = *x; // copy
