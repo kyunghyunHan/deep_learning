@@ -35,7 +35,11 @@ fn main(){
     /*===============burn_book================ */
 
 
-    
+    let x= arr2(&[[1.0,-0.5],[-2.0,3.0]]);   
+
+    let mask = x.mapv(|x|if x<=0.0{true}else{false});
+     
+     print!("{}",mask)
 
 }
 

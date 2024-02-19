@@ -5,3 +5,4 @@ pub mod gradient_descent;
 pub mod error;
 pub mod sgd;
 pub mod relu;
+pub mod sigmoid;

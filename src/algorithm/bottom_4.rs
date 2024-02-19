@@ -1,6 +1,6 @@
-
+use ndarray::prelude::*;
 use crate::algorithm::add_layer::AddLayer;
-
+use super::utils::relu::ReLU;
 /*오차역전파법
 계산 그래프 node,edge
 
@@ -71,5 +71,10 @@ pub fn main() {
     println!("{:?}",mul_tax_layer);
     println!("{}",price.unwrap());
     println!("{},{},{},{},{}",dapple_num.unwrap(),dapple.unwrap(),dorange.unwrap(),dorange_num.unwrap(),dtax.unwrap());
+    
 
+    let mut relu = ReLU::new();
+    let x= arr2(&[[1.0,-0.5],[-2.0,3.0]]);   
+    let mask= relu.forward(Some(x.into_dyn()));
+    println!("11:{}",mask.unwrap());
 }
