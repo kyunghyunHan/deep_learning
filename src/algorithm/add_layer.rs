@@ -1,6 +1,6 @@
 pub struct AddLayer{
-    x:Option<f64>,
-    y:Option<f64>
+    pub x:Option<f64>,
+    pub y:Option<f64>
 }
 
 impl AddLayer{
