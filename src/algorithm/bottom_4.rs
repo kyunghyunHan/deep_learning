@@ -78,6 +78,8 @@ pub fn main() {
     let x= arr2(&[[1.0,-0.5],[-2.0,3.0]]);   
     let mask= relu.forward(Some(x.into_dyn()));
     println!("11:{}",mask.unwrap());
-
-    let x= arr1(&[])
+    let mut rng = rand::thread_rng();
+    let random_numbers: Array1<f64> = Array1::from_shape_fn((2,), |_| rng.gen());
+  println!("{:?}",random_numbers);
+    
 }
