@@ -1,6 +1,6 @@
-use ndarray::prelude::*;
-use crate::algorithm::add_layer::AddLayer;
 use super::utils::relu::ReLU;
+use crate::algorithm::add_layer::AddLayer;
+use ndarray::prelude::*;
 use rand::prelude::*;
 /*오차역전파법
 계산 그래프 node,edge
@@ -33,8 +33,8 @@ pub fn main() {
 
     //역전파
     let dprice = Some(1f64);
-    let (dapple_price, dtax) =  mul_tax_layer.backward(dprice);
-    let (dapple, dapple_num) =  mul_apple_layer.backward(dapple_price);
+    let (dapple_price, dtax) = mul_tax_layer.backward(dprice);
+    let (dapple, dapple_num) = mul_apple_layer.backward(dapple_price);
     println!(
         "Mul:{},{},{}",
         dapple.unwrap(),
@@ -59,27 +59,43 @@ pub fn main() {
     let mut add_apple_orange_layer: AddLayer = AddLayer::new();
     let mut mul_tax_layer = MulLayer::new();
     //순전파
-    let apple_price =  mul_apple_layer.forward(apple, apple_num);
-    let orange_price =  mul_orange_layer.forward(orange, orange_num);
-    let all_price =  add_apple_orange_layer.forward(apple_price, orange_price);
-    let price =   mul_tax_layer.forward(all_price, tax);
-    //역전파 
+    let apple_price = mul_apple_layer.forward(apple, apple_num);
+    let orange_price = mul_orange_layer.forward(orange, orange_num);
+    let all_price = add_apple_orange_layer.forward(apple_price, orange_price);
+    let price = mul_tax_layer.forward(all_price, tax);
+    //역전파
     let dprice = Some(1f64);
-    let (dall_price, dtax) =  mul_tax_layer.backward(dprice);
-    let (dapple_price,dorange_price)=  add_apple_orange_layer.backward(dall_price);
-    let (dorange,dorange_num) = mul_orange_layer.backward(dorange_price);
-    let (dapple,dapple_num)=  mul_apple_layer.backward(dapple_price);
-    println!("{:?}",mul_tax_layer);
-    println!("{}",price.unwrap());
-    println!("{},{},{},{},{}",dapple_num.unwrap(),dapple.unwrap(),dorange.unwrap(),dorange_num.unwrap(),dtax.unwrap());
-    
+    let (dall_price, dtax) = mul_tax_layer.backward(dprice);
+    let (dapple_price, dorange_price) = add_apple_orange_layer.backward(dall_price);
+    let (dorange, dorange_num) = mul_orange_layer.backward(dorange_price);
+    let (dapple, dapple_num) = mul_apple_layer.backward(dapple_price);
+    println!("{:?}", mul_tax_layer);
+    println!("{}", price.unwrap());
+    println!(
+        "{},{},{},{},{}",
+        dapple_num.unwrap(),
+        dapple.unwrap(),
+        dorange.unwrap(),
+        dorange_num.unwrap(),
+        dtax.unwrap()
+    );
 
     let mut relu = ReLU::new();
-    let x= arr2(&[[1.0,-0.5],[-2.0,3.0]]);   
-    let mask= relu.forward(Some(x.into_dyn()));
-    println!("11:{}",mask.unwrap());
+    let x = arr2(&[[1.0, -0.5], [-2.0, 3.0]]);
+    let mask = relu.forward(Some(x.into_dyn()));
+    println!("11:{}", mask.unwrap());
     let mut rng = rand::thread_rng();
-    let random_numbers: Array1<f64> = Array1::from_shape_fn((2,), |_| rng.gen());
-  println!("{:?}",random_numbers);
+    let x: Array1<f64> = Array1::from_shape_fn((2,), |_| rng.gen());
+    println!("{:?}", x);
+    let _w: Array2<f64> = Array2::from_shape_fn((2,3), |_| rng.gen());
+    println!("{}",_w);
+    let _b: Array1<f64> = Array1::from_shape_fn((3,), |_| rng.gen());
+    println!("{}",_b);
+
+    println!("{:?}",x.shape());//2
+    println!("{:?}",_w.shape());//2,3
+    println!("{:?}",_b.shape());//3
+    let _y= x.dot(&_w)+_b;
+    println!("{}",_y);
     
 }
