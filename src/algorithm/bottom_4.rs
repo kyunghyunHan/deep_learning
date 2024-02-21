@@ -1,6 +1,7 @@
 use ndarray::prelude::*;
 use crate::algorithm::add_layer::AddLayer;
 use super::utils::relu::ReLU;
+use rand::prelude::*;
 /*오차역전파법
 계산 그래프 node,edge
 
@@ -77,4 +78,6 @@ pub fn main() {
     let x= arr2(&[[1.0,-0.5],[-2.0,3.0]]);   
     let mask= relu.forward(Some(x.into_dyn()));
     println!("11:{}",mask.unwrap());
+
+    let x= arr1(&[])
 }

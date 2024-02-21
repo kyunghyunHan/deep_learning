@@ -6,3 +6,4 @@ pub mod error;
 pub mod sgd;
 pub mod relu;
 pub mod sigmoid;
+pub mod affine;
