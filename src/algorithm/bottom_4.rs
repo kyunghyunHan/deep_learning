@@ -13,7 +13,6 @@ use rand::prelude::*;
 연쇄법칙
 
 합성함수
-
 */
 use super::mul_layer::MulLayer;
 
