@@ -28,7 +28,7 @@ w1,w2=가중치,각신호의 영향력을 제어
 h(x)함수는 입력이 0을 넘으면 1을 반환 않으면 0을 반환
 
 
-h(x)=입력신호의 총합을 출력신호로 변환하는 함수를  일반적으로 활성화 함수 
+h(x)=입력신호의 총합을 출력신호로 변환하는 함수를  일반적으로 활성화 함수
 
 
 가중치 신호를 조합한 결과가 a라는 노드가 되고 활성화 함수 h ()를 통과하여 y라는 노드로 변환되는 과정 (뉴런==노드)
@@ -38,12 +38,11 @@ h(x)=입력신호의 총합을 출력신호로 변환하는 함수를  일반적
 */
 
 pub fn main() {
-
     /*계단 함수
     일반적으로 0을 경계로 출력이 0보다 작으면 0 크면 1
      */
     let x = step_function(&arr1(&[-1.0, 1.0, 2.0]));
-    println!("Step Function :{}", step_function(&arr1(&[-1.0, 1.0, 2.0])));//Step Function :[0, 1, 1]
+    println!("Step Function :{}", step_function(&arr1(&[-1.0, 1.0, 2.0]))); //Step Function :[0, 1, 1]
 
     /*시그모이드
 
@@ -51,7 +50,7 @@ pub fn main() {
     신경망에서는 활성화  함수로 시그모이드 함수를 이용하여 신호를변환 그 변환된 신호를 다음 뉴런에 전달
     계단 함수가 0 또는 1만 반환하느 반면  시그모이드는 실수를 돌려돌려줍니다  퍼셉트론에서는 뉴런사이에 1 or 0 이 흘럿다면 신경망에서는 연속적인 실수가 흐름
 
-    
+
     */
 
     /*비선형 함수
@@ -62,14 +61,14 @@ pub fn main() {
     층을 아무리 깊게해도 은닉충이 없는 네트워크로도 똑같은 기능을 수행할수 있음
      */
     let x = sigmoid_function(&arr1(&[-1.0, 1.0, 2.0]).into_dyn());
-    println!("Sigmoid Function :{}", x);//Sigmoid Function :[0.2689414213699951, 0.7310585786300049, 0.8807970779778823]
+    println!("Sigmoid Function :{}", x); //Sigmoid Function :[0.2689414213699951, 0.7310585786300049, 0.8807970779778823]
 
     /*ReLU
     최근에는 시그모이드보다 ReLU를 주로 이용
     0을 넘으면 그입력을 그대로 출력,0이하면 0을 출력
     */
     let x = relu_function(&arr1(&[-1.0, 1.0, 2.0]));
-    println!("ReLU Function :{}", x);//ReLU Function :[0, 1, 2]
+    println!("ReLU Function :{}", x); //ReLU Function :[0, 1, 2]
 
     /*다차원 배열
     1차원 텐서 = 벡터
@@ -149,7 +148,7 @@ pub fn main() {
     let a1 = x.dot(&w1) + b1;
     println!("{:?}", a1.shape());
 
-    let z1 =sigmoid_function(&a1.into_dyn());
+    let z1 = sigmoid_function(&a1.into_dyn());
     println!("z1:{}", z1);
     //z1:[0.574442516811659, 0.6681877721681662, 0.7502601055951177]
     //1층에서 2층으로 가는 과정
@@ -169,7 +168,7 @@ pub fn main() {
     let a3 = z2.into_dimensionality::<Ix1>().unwrap().dot(&w3) + b3;
 
     let y = identity_function(&x.into_dyn());
- 
+
     /*항등함수와 소프트맥스 함수 구현 */
     let a = arr1(&[0.3, 2.9, 4.0]);
     let exp_a = &a.map(|val: &f64| f64::exp(*val));
@@ -183,10 +182,11 @@ pub fn main() {
     //end
 
     //정리
-    // let network = Network::init_network();
-    // let x = arr1(&[1.0, 0.5]).into_dyn();
-    // let y = Network::forward(network, x);
-    // println!("여기:{}", y);
+    let network = Network::init_network();
+    let  x = arr1(&[1.0, 0.5]).into_dyn();
+    let y = Network::forward(network, x);
+    println!("y:{}", y);
+    //y:[0.3168270764110298, 0.6962790898619668
     /*출력층
     분류= 소프트맥스
     회귀 = 항등함수
@@ -219,7 +219,7 @@ pub fn main() {
     );
 
     let a = arr1(&[0.3, 2.9, 4.0]);
-    let y = softmax(&a);
+    let y = softmax(&a.into_dyn());
     println!("{}", y);
     println!("sum:{}", y.sum()); //총합 1
 
@@ -248,7 +248,6 @@ pub fn main() {
     - 데이터를 특정 범위로 변환하는것을 정규화
     - 신경망 입력데이터에 특정 변환을 가하는 것을 전처리
     */
-    
 
     // let network = Network::init_network();
     // println!("{:?}",network.w1.shape());
@@ -256,7 +255,7 @@ pub fn main() {
     // println!("{:?}",network.w3.shape());
 
     // let batch_size = 100;//배치크기
-    
+
     // let accuracy_cnt: usize = (0..x_test.shape()[0])
     //     .into_par_iter() //병렬처리
     //     .step_by(batch_size)
@@ -301,7 +300,7 @@ fn sigmoid_function(x: &ArrayD<f64>) -> ArrayD<f64> {
 fn relu_function(x: &Array1<f64>) -> Array1<f64> {
     x.mapv(|element| if element > 0.0 { element } else { 0.0 })
 }
-fn softmax(a: &Array1<f64>) -> Array1<f64> {
+fn softmax(a: &ArrayD<f64>) -> ArrayD<f64> {
     let c: f64 = a[a.argmax().unwrap()];
     let exp_a = a.mapv(|x| (x - c).exp());
     let sum_exp_a = exp_a.sum();
@@ -325,54 +324,54 @@ struct Network {
 }
 impl Network {
     fn init_network() -> Self {
-        let w1_array: Vec<f64> = weight::w1::w1
-            .iter()
-            .flat_map(|row| row.iter())
-            .cloned()
-            .collect();
-        let w1 = ArrayView2::from_shape((784, 50), &w1_array)
-            .unwrap()
-            .to_owned();
+        // let w1_array: Vec<f64> = weight::w1::w1
+        //     .iter()
+        //     .flat_map(|row| row.iter())
+        //     .cloned()
+        //     .collect();
+        // let w1 = ArrayView2::from_shape((784, 50), &w1_array)
+        //     .unwrap()
+        //     .to_owned();
 
-        let w2_array: Vec<f64> = weight::w2::w2
-            .iter()
-            .flat_map(|row| row.iter())
-            .cloned()
-            .collect();
-        let w2 = ArrayView2::from_shape((50, 100), &w2_array)
-            .unwrap()
-            .to_owned();
+        // let w2_array: Vec<f64> = weight::w2::w2
+        //     .iter()
+        //     .flat_map(|row| row.iter())
+        //     .cloned()
+        //     .collect();
+        // let w2 = ArrayView2::from_shape((50, 100), &w2_array)
+        //     .unwrap()
+        //     .to_owned();
 
-        let w3_array: Vec<f64> = weight::w3::w3
-            .iter()
-            .flat_map(|row| row.iter())
-            .cloned()
-            .collect();
-        let w3 = ArrayView2::from_shape((100, 10), &w3_array)
-            .unwrap()
-            .to_owned();
+        // let w3_array: Vec<f64> = weight::w3::w3
+        //     .iter()
+        //     .flat_map(|row| row.iter())
+        //     .cloned()
+        //     .collect();
+        // let w3 = ArrayView2::from_shape((100, 10), &w3_array)
+        //     .unwrap()
+        //     .to_owned();
 
-        let b1 = arr1(&weight::b1::b1);
-        let b2 = arr1(&weight::b2::b2);
-        let b3 = arr1(&weight::b3::b3);
-        Network {
-            w1: w1,
-            w2: w2,
-            w3: w3,
-            b1: b1,
-            b2: b2,
-            b3: b3,
-        }
+        // let b1 = arr1(&weight::b1::b1);
+        // let b2 = arr1(&weight::b2::b2);
+        // let b3 = arr1(&weight::b3::b3);
         // Network {
-        //     w1: arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]),
-        //     w2: arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]),
-        //     w3: arr2(&[[0.1, 0.3], [0.2, 0.4]]),
-        //     b1: arr1(&[0.1, 0.2, 0.3]),
-        //     b2: arr1(&[0.1, 0.2]),
-        //     b3: arr1(&[0.1, 0.2]),
+        //     w1: w1,
+        //     w2: w2,
+        //     w3: w3,
+        //     b1: b1,
+        //     b2: b2,
+        //     b3: b3,
         // }
+        Network {
+            w1: arr2(&[[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]),
+            w2: arr2(&[[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]]),
+            w3: arr2(&[[0.1, 0.3], [0.2, 0.4]]),
+            b1: arr1(&[0.1, 0.2, 0.3]),
+            b2: arr1(&[0.1, 0.2]),
+            b3: arr1(&[0.1, 0.2]),
+        }
     }
-    fn forward(self, x: ArrayD<f64>) -> ArrayD<f64> {
+    fn forward(self, x:ArrayD<f64>) -> ArrayD<f64> {
         let rank = x.ndim();
         let y: ArrayD<f64>;
         if rank == 1 {
@@ -387,14 +386,11 @@ impl Network {
             println!("{:?}", x.shape());
 
             let a1 = x.dot(&w1) + b1;
-            println!("{}", "여기");
-
-            let z1 = a1.mapv(|x| sigmoid(x));
-            let a2 = z1.dot(&w2) + b2;
-            println!("{}", "여기");
-            let z2 = a2.mapv(|x| sigmoid(x));
-            let a3 = z2.dot(&w3) + b3;
-            y =identity_function(&a3.into_dyn());
+            let z1 = sigmoid_function(&a1.into_dyn());
+            let a2 = z1.into_dimensionality::<Ix1>().unwrap().dot(&w2) + b2;
+            let z2 = sigmoid_function(&a2.into_dyn());
+            let a3 = z2.into_dimensionality::<Ix1>().unwrap().dot(&w3) + b3;
+            y = identity_function(&a3.into_dyn());
         } else if rank == 2 {
             let x = x.into_dimensionality::<Ix2>().unwrap();
 
@@ -403,13 +399,13 @@ impl Network {
             let (b1, b2, b3) = (network.b1, network.b2, network.b3);
 
             let a1 = x.dot(&w1) + b1;
-            let z1 = a1.mapv(|x| sigmoid(x));
-            let a2 = z1.dot(&w2) + b2;
-            let z2 = a2.mapv(|x| sigmoid(x));
-            let a3 = z2.dot(&w3) + b3;
+            let z1 = sigmoid_function(&a1.into_dyn());
+            let a2 = z1.into_dimensionality::<Ix2>().unwrap().dot(&w2) + b2;
+            let z2 = sigmoid_function(&a2.into_dyn());
+            let a3 = z2.into_dimensionality::<Ix2>().unwrap().dot(&w3) + b3;
             y = identity_function(&a3.into_dyn());
         } else {
-            // Handle the case when rank is not 1 or 2
+
             panic!("Unsupported rank: {}", rank);
         }
         y
@@ -423,30 +419,18 @@ impl Network {
             let x = x.into_dimensionality::<Ix1>().unwrap();
             let a1 = x.dot(&w1) + b1;
             let z1 = a1.map(|&x| sigmoid(x));
-            let a2 = z1.dot(&w2) + b2;
+            let a2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = z1.dot(&w2) + b2;
             let z2 = a2.map(|&x| sigmoid(x));
             let a3 = z2.dot(&w3) + b3;
-            y = softmax(&a3).into_dyn();
+            y = softmax(&a3.into_dyn())
         } else if rank == 2 {
             let x = x.into_dimensionality::<Ix2>().unwrap();
             let a1 = x.dot(&w1) + b1;
-            let z1 = a1.map(|&x| sigmoid(x));
-            let a2 = z1.dot(&w2) + b2;
-            let z2 = a2.map(|&x| sigmoid(x));
-            let a3 = z2.dot(&w3) + b3;
-            let vec_of_vec: Vec<Vec<f64>> = a3
-                .axis_iter(Axis(0))
-                .map(|row| softmax(&row.to_owned()))
-                .collect::<Vec<_>>()
-                .iter()
-                .map(|x| x.to_vec())
-                .collect();
-            let array_2d: Array2<f64> = Array2::from_shape_vec(
-                (a3.shape()[0], a3.shape()[1]),
-                vec_of_vec.into_iter().flatten().collect(),
-            )
-            .unwrap();
-            y = array_2d.into_dyn();
+            let z1 = sigmoid_function(&a1.into_dyn());
+            let a2 = z1.into_dimensionality::<Ix2>().unwrap().dot(&w2) + b2;
+            let z2 = sigmoid_function(&a2.into_dyn());
+            let a3 = z2.into_dimensionality::<Ix2>().unwrap().dot(&w3) + b3;
+            y =softmax(&a3.into_dyn());
         } else {
             panic!("Unsupported rank: {}", rank);
         }
