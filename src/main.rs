@@ -14,8 +14,8 @@ fn main(){
 //    arr[0] =2;
 //    println!("{}",arr);
     // algorithm::bottom_0::main();
-    // algorithm::bottom_1::main();
     algorithm::bottom_2::main();
+    // algorithm::two_layer_net::main();
     // boston_price::model::main();
     /*===============fast_depp================ */
     // fast_deep::fast_deep01::main();
