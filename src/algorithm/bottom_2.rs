@@ -232,7 +232,7 @@ pub fn main() {
     */
 
     //각 데이터 출력 형상
-    // let mnist = Mnist::new();
+    let mnist = Mnist::new();
     // let x_train = mnist.x_train;
     // let y_train = mnist.y_train;
     // let x_test = mnist.x_test;
@@ -438,63 +438,63 @@ impl Network {
         y
     }
 }
-// struct Mnist {
-//     x_train: Array2<i64>,
-//     y_train: Array1<i64>,
-//     x_test: Array2<f64>,
-//     y_test: Array1<i64>,
-// }
+struct Mnist {
+    x_train: Array2<i64>,
+    y_train: Array1<i64>,
+    x_test: Array2<f64>,
+    y_test: Array1<i64>,
+}
 
-// impl Mnist {
-//     fn new() -> Self {
-//         let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
-//             .unwrap()
-//             .has_header(false)
-//             .finish()
-//             .unwrap();
-//         let x_test = CsvReader::from_path("./dataset/mnist/x_test.csv")
-//             .unwrap()
-//             .has_header(false)
-//             .finish()
-//             .unwrap();
-//         let y_test = CsvReader::from_path("./dataset/mnist/y_test.csv")
-//             .unwrap()
-//             .finish()
-//             .unwrap();
-//         let y_train = CsvReader::from_path("./dataset/mnist/y_train_1.csv")
-//             .unwrap()
-//             .finish()
-//             .unwrap();
-//         let y_train = arr1(
-//             &y_train
-//                 .column("label")
-//                 .unwrap()
-//                 .i64()
-//                 .unwrap()
-//                 .into_no_null_iter()
-//                 .collect::<Vec<i64>>(),
-//         );
-//         let y_test = arr1(
-//             &y_test
-//                 .column("label")
-//                 .unwrap()
-//                 .i64()
-//                 .unwrap()
-//                 .into_no_null_iter()
-//                 .collect::<Vec<i64>>(),
-//         );
-//         let x_train = x_train
-//             .to_ndarray::<Int64Type>(IndexOrder::Fortran)
-//             .unwrap();
-//         let x_test = x_test
-//             .to_ndarray::<Float64Type>(IndexOrder::Fortran)
-//             .unwrap();
+impl Mnist {
+    fn new() -> Self {
+        let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap();
+        let x_test = CsvReader::from_path("./dataset/mnist/x_test.csv")
+            .unwrap()
+            .has_header(false)
+            .finish()
+            .unwrap();
+        let y_test = CsvReader::from_path("./dataset/mnist/y_test.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let y_train = CsvReader::from_path("./dataset/mnist/y_train_1.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+        let y_train = arr1(
+            &y_train
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+        let y_test = arr1(
+            &y_test
+                .column("label")
+                .unwrap()
+                .i64()
+                .unwrap()
+                .into_no_null_iter()
+                .collect::<Vec<i64>>(),
+        );
+        let x_train = x_train
+            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
+            .unwrap();
+        let x_test = x_test
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
 
-//         Mnist {
-//             x_train,
-//             y_train,
-//             x_test,
-//             y_test,
-//         }
-//     }
-// }
+        Mnist {
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+        }
+    }
+}
