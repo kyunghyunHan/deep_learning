@@ -3,11 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 # 데이터
-x_train = torch.FloatTensor([[1], [2], [3]])
-y_train = torch.FloatTensor([[2], [4], [6]])
+x_train = torch.FloatTensor([[1], [2], [3]]) # 3행1열
+y_train = torch.FloatTensor([[2], [4], [6]])# 3행1열
 # 모델 초기화
 W = torch.zeros(1, requires_grad=True)
+
+print(W.dim())
 b = torch.zeros(1, requires_grad=True)
+print(W.dim())
+
 # optimizer 설정
 optimizer = optim.SGD([W, b], lr=0.01)
 
@@ -16,7 +20,7 @@ for epoch in range(nb_epochs + 1):
 
     # H(x) 계산
     hypothesis = x_train * W + b
-
+    print(hypothesis)
     # cost 계산
     cost = torch.mean((hypothesis - y_train) ** 2)
 
