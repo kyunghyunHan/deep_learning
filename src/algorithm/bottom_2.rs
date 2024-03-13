@@ -183,7 +183,7 @@ pub fn main() {
 
     //정리
     let network = Network::init_network();
-    let  x = arr1(&[1.0, 0.5]).into_dyn();
+    let x = arr1(&[1.0, 0.5]).into_dyn();
     let y = Network::forward(network, x);
     println!("y:{}", y);
     //y:[0.3168270764110298, 0.6962790898619668
@@ -233,6 +233,7 @@ pub fn main() {
 
     //각 데이터 출력 형상
     let mnist = Mnist::new();
+
     // let x_train = mnist.x_train;
     // let y_train = mnist.y_train;
     // let x_test = mnist.x_test;
@@ -371,7 +372,7 @@ impl Network {
             b3: arr1(&[0.1, 0.2]),
         }
     }
-    fn forward(self, x:ArrayD<f64>) -> ArrayD<f64> {
+    fn forward(self, x: ArrayD<f64>) -> ArrayD<f64> {
         let rank = x.ndim();
         let y: ArrayD<f64>;
         if rank == 1 {
@@ -405,7 +406,6 @@ impl Network {
             let a3 = z2.into_dimensionality::<Ix2>().unwrap().dot(&w3) + b3;
             y = identity_function(&a3.into_dyn());
         } else {
-
             panic!("Unsupported rank: {}", rank);
         }
         y
@@ -430,7 +430,7 @@ impl Network {
             let a2 = z1.into_dimensionality::<Ix2>().unwrap().dot(&w2) + b2;
             let z2 = sigmoid_function(&a2.into_dyn());
             let a3 = z2.into_dimensionality::<Ix2>().unwrap().dot(&w3) + b3;
-            y =softmax(&a3.into_dyn());
+            y = softmax(&a3.into_dyn());
         } else {
             panic!("Unsupported rank: {}", rank);
         }
@@ -439,7 +439,7 @@ impl Network {
     }
 }
 struct Mnist {
-    x_train: Array2<i64>,
+    x_train: Array2<f64>,
     y_train: Array1<i64>,
     x_test: Array2<f64>,
     y_test: Array1<i64>,
@@ -447,26 +447,21 @@ struct Mnist {
 
 impl Mnist {
     fn new() -> Self {
-        let x_train = CsvReader::from_path("./dataset/mnist/x_train.csv")
-            .unwrap()
-            .has_header(false)
-            .finish()
-            .unwrap();
-        let x_test = CsvReader::from_path("./dataset/mnist/x_test.csv")
-            .unwrap()
-            .has_header(false)
-            .finish()
-            .unwrap();
-        let y_test = CsvReader::from_path("./dataset/mnist/y_test.csv")
+        let train_df = CsvReader::from_path("./datasets/mnist/train.csv")
             .unwrap()
             .finish()
             .unwrap();
-        let y_train = CsvReader::from_path("./dataset/mnist/y_train_1.csv")
+        let test_df = CsvReader::from_path("./datasets/mnist/test.csv")
             .unwrap()
             .finish()
             .unwrap();
+        let submission_df = CsvReader::from_path("./datasets/mnist/sample_submission.csv")
+            .unwrap()
+            .finish()
+            .unwrap();
+
         let y_train = arr1(
-            &y_train
+            &train_df
                 .column("label")
                 .unwrap()
                 .i64()
@@ -474,21 +469,30 @@ impl Mnist {
                 .into_no_null_iter()
                 .collect::<Vec<i64>>(),
         );
+
         let y_test = arr1(
-            &y_test
-                .column("label")
+            &submission_df
+                .column("Label")
                 .unwrap()
                 .i64()
                 .unwrap()
                 .into_no_null_iter()
                 .collect::<Vec<i64>>(),
         );
-        let x_train = x_train
-            .to_ndarray::<Int64Type>(IndexOrder::Fortran)
-            .unwrap();
-        let x_test = x_test
+
+        let x_train = train_df
+            .drop("label")
+            .unwrap()
             .to_ndarray::<Float64Type>(IndexOrder::Fortran)
             .unwrap();
+        let x_test = test_df
+            .to_ndarray::<Float64Type>(IndexOrder::Fortran)
+            .unwrap();
+
+        println!("{:?}", x_train.shape());
+        println!("{:?}", x_test.shape());
+        println!("{:?}", y_train.shape());
+        println!("{:?}", y_test.shape());
 
         Mnist {
             x_train,
