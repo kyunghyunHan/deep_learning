@@ -189,6 +189,8 @@ pub fn main() {
     println!("x_test:{:?}", x_test.shape());
     println!("y_test:{:?}", y_test.shape());
     println!("{}",x_train.len());
+    let a = x_train.slice(s![1..4, ..]); // 행 1에서 1까지, 모든 열
+    println!("{:?}",a.shape());
     let mut accuracy_cnt =0f64;
     for i in 0..x_train.shape()[0]{
           println!("{}",accuracy_cnt);
