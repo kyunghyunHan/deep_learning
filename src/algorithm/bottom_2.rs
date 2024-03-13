@@ -231,18 +231,6 @@ pub fn main() {
 
     */
 
-    //각 데이터 출력 형상
-    let mnist = Mnist::new();
-
-    // let x_train = mnist.x_train;
-    // let y_train = mnist.y_train;
-    // let x_test = mnist.x_test;
-    // let y_test = mnist.y_test;
-
-    // println!("x_trian:{:?}", x_train.shape());
-    // println!("y_train:{:?}", y_train.shape());
-    // println!("x_test:{:?}", x_test.shape());
-    // println!("y_test:{:?}", y_test.shape());
 
     /*신경망의 추론
     28*28 = 784

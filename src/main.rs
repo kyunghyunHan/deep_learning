@@ -14,7 +14,7 @@ fn main(){
 //    arr[0] =2;
 //    println!("{}",arr);
     // algorithm::bottom_0::main();
-    algorithm::bottom_2::main();
+    algorithm::simple_mnist::main();
     // algorithm::two_layer_net::main();
     // boston_price::model::main();
     /*===============fast_depp================ */
