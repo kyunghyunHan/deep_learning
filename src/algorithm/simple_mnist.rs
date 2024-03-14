@@ -1,7 +1,8 @@
 use super::weight;
 use ndarray::prelude::*;
-use polars::prelude::*;
+use ndarray::Slice;
 use ndarray_stats::QuantileExt;
+use polars::prelude::*;
 struct Mnist {
     x_train: Array2<f64>,
     y_train: Array1<i64>,
@@ -158,13 +159,15 @@ impl Network {
             let x = x.into_dimensionality::<Ix1>().unwrap();
             let a1 = x.dot(&w1) + b1;
             let z1 = sigmoid_function(&a1.into_dyn());
-            let a2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> = z1.into_dimensionality::<Ix1>().unwrap().dot(&w2) + b2;
+            let a2: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 1]>> =
+                z1.into_dimensionality::<Ix1>().unwrap().dot(&w2) + b2;
             let z2 = sigmoid_function(&a2.into_dyn());
             let a3 = z2.into_dimensionality::<Ix1>().unwrap().dot(&w3) + b3;
             y = softmax(&a3.into_dyn())
         } else if rank == 2 {
             let x = x.into_dimensionality::<Ix2>().unwrap();
             let a1 = x.dot(&w1) + b1;
+
             let z1 = sigmoid_function(&a1.into_dyn());
             let a2 = z1.into_dimensionality::<Ix2>().unwrap().dot(&w2) + b2;
             let z2 = sigmoid_function(&a2.into_dyn());
@@ -188,9 +191,11 @@ pub fn main() {
     println!("y_train:{:?}", y_train.shape());
     println!("x_test:{:?}", x_test.shape());
     println!("y_test:{:?}", y_test.shape());
-    println!("{}",x_train.len());
-    let a = x_train.slice(s![1..4, ..]); // 행 1에서 1까지, 모든 열
-    println!("{:?}",a.shape());
+
+    let mut accuracy_cnt = 0f64;
+    let batch_size = 100;
+
+    /*
     let mut accuracy_cnt =0f64;
     for i in 0..x_train.shape()[0]{
           println!("{}",accuracy_cnt);
@@ -199,9 +204,28 @@ pub fn main() {
           if p==*y_train.get(i).unwrap() as usize{
             accuracy_cnt+=1.0;
           }
-          
     }
     println!("{}",accuracy_cnt/x_train.shape()[0] as f64)
+     */
+    for i in (0..x_train.shape()[0]).step_by(100) {
+        let x_batch = x_train.slice_axis(Axis(0), Slice::from(i..i + batch_size));
+        let y = network.clone().predict(x_batch.into_owned().into_dyn());
+        let p: Vec<i64> = y
+            .into_dimensionality::<Ix2>()
+            .unwrap()
+            .axis_iter(Axis(0))
+            .map(|x| x.argmax().unwrap() as i64)
+            .collect::<Vec<i64>>();
+        let y = y_train
+            .slice_axis(Axis(0), Slice::from(i..i + batch_size))
+            .to_vec();
+        accuracy_cnt += p
+            .iter()
+            .zip(&y)
+            .filter(|(&p_val, &t_val)| p_val == t_val)
+            .count() as f64;
+    }
+    println!("{}", accuracy_cnt / x_train.shape()[0] as f64)
 }
 fn sigmoid_function(x: &ArrayD<f64>) -> ArrayD<f64> {
     x.mapv(|x| 1.0 / (1.0 + (-x).exp()))
