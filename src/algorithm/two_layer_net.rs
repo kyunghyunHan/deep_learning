@@ -1,14 +1,13 @@
 use super::utils::{
     activation::*,
-    error::{cross_entropy_error, sum_squares_error},
+    error::{cross_entropy_error},
     gradient_descent::numerical_gradient,
     mnist::load_mnist,
     random::{fill_with_random, random_choice},
 };
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
-use std::cell::RefCell;
-use std::rc::Rc;
+
 #[derive(Clone)]
 struct TwoLayerNet {
     pub w1: ArrayD<f64>,
