@@ -7,7 +7,7 @@ pub fn sum_squares_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
         .map(|(&y_i, &t_i)| (y_i - t_i).powi(2))
         .sum::<f64>()
 }
-/*해결 */
+
 pub fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
     let delta = 1e-7;
     match y.ndim() {
@@ -25,17 +25,14 @@ pub fn cross_entropy_error(y: &ArrayD<f64>, t: &ArrayD<f64>) -> f64 {
                 .sum::<f64>();
             -y / batch_size
         }
-
         2 => {
-            let t = t.clone().into_dimensionality::<Ix2>().unwrap();
-            let y = y.clone().into_dimensionality::<Ix2>().unwrap();
             let batch_size = y.shape()[0] as f64;
             let y = y
                 .iter()
                 .zip(t.iter())
                 .map(|(&y, &t)| t * (y + delta).ln())
                 .sum::<f64>();
-            y / batch_size
+          -  y / batch_size
         }
         _ => {
             panic!("rank error")

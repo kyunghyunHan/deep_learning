@@ -4,10 +4,7 @@ use ndarray_stats::QuantileExt;
 
 use super::utils::{
     activation::*,
-    random::{fill_with_random,random_choice},
-    mnist::load_mnist,
-    gradient_descent::{numerical_gradient},
-    error::{cross_entropy_error,sum_squares_error}
+    error::{cross_entropy_error}
 };
 #[derive(Debug, Clone)]
 struct SimpleNet {
@@ -27,6 +24,7 @@ impl SimpleNet {
             arr
         };
         self.w = arr2(&matrix).into_dyn();
+      
         self
     }
     fn predict(self, x: ArrayD<f64>) -> ArrayD<f64> {
@@ -50,16 +48,10 @@ impl SimpleNet {
     }
 
     fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
-        let z = self.predict(x.clone());
-        let y = softmax(z);
+        let z = self.predict(x);
+        let y = softmax(&z);
         let loss = cross_entropy_error(&mut y.into_dyn(), &mut t.into_dyn());
         loss
-    }
-    fn f_functsion(w: ArrayD<f64>) -> f64 {
-        let x: ArrayD<f64> = Default::default();
-        let t: ArrayD<f64> = Default::default();
-        let net = SimpleNet { w: w };
-        SimpleNet::loss(net, x, t)
     }
 }
 

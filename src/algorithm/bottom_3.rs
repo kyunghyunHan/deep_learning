@@ -2,7 +2,7 @@ use core::panic;
 
 use super::utils::{
     error::{cross_entropy_error,sum_squares_error},
-    gradient_descent::numerical_gradient,
+    gradient_descent::{numerical_gradient,gradient_descent},
     mnist::load_mnist,
     random::{fill_with_random, random_choice},
 };
@@ -70,9 +70,9 @@ pub fn main() {
     let y1 = x1.map(|&elem| function_1(elem));
     println!("{:?}", y1);
     println!("미분:{}", numerical_diff(function_1, 5.0)); //0
-    println!("미분:{}", numerical_diff(function_1, 5.0)); //0
+    println!("미분:{}", numerical_diff(function_1, 10.0)); //0
 
-    /*변수가 여러개=>편미분 */
+  /*변수가 여러개=>편미분 */
     println!("편미분:{}", numerical_diff(function_tmp1, 5.0)); //0
     println!("편미분:{}", numerical_diff(function_tmp1, 3.0));
     println!("편미분:{}", numerical_diff(function_tmp2, 4.0));
@@ -82,7 +82,7 @@ pub fn main() {
     //     // numerical_gradient(function_2, arr1(&[3.0, 4.0]).into_dyn())
     // );
 
-    let init_x = arr1(&[-3.0, 4.0]);
+    // let init_x = arr1(&[-3.0, 4.0]);
     // println!(
     //     "gradient_descent:{}",
     //     gradient_descent(function_2, init_x.into_dyn(), 0.1, 100)

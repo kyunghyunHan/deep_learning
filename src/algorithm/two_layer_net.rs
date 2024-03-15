@@ -54,14 +54,14 @@ impl TwoLayerNet {
                 let a1 = x.dot(&w1.into_dimensionality::<Ix2>().unwrap()) + b1;
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix1>().unwrap();
                 let a2 = z1.dot(&w2.into_dimensionality::<Ix2>().unwrap()) + b2;
-                softmax(a2.into_dyn())
+                softmax(&a2.into_dyn())
             }
             2 => {
                 let x = x.clone().into_dimensionality::<Ix2>().unwrap();
                 let a1 = x.dot(&w1.into_dimensionality::<Ix2>().unwrap()) + b1;
                 let z1 = sigmoid(a1.into_dyn()).into_dimensionality::<Ix2>().unwrap();
                 let a2 = z1.dot(&w2.into_dimensionality::<Ix2>().unwrap()) + b2;
-                softmax(a2.into_dyn())
+                softmax(&a2.into_dyn())
             }
             _ => {
                 panic!("predict rank error");

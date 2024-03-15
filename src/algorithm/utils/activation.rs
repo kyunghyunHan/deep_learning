@@ -1,7 +1,7 @@
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 
-pub fn softmax(a: ArrayD<f64>) -> ArrayD<f64> {
+pub fn softmax(a: &ArrayD<f64>) -> ArrayD<f64> {
     let rank = a.ndim();
     if rank == 1 {
         let a = a.clone().into_dimensionality::<Ix1>().unwrap();
