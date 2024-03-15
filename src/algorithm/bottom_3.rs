@@ -1,51 +1,43 @@
 use core::panic;
 
-
+use super::utils::{
+    error::{cross_entropy_error,sum_squares_error},
+    gradient_descent::numerical_gradient,
+    mnist::load_mnist,
+    random::{fill_with_random, random_choice},
+};
 use ndarray::prelude::*;
 use polars::prelude::*;
 use rand::prelude::*;
-use super::utils::{
-    random::{fill_with_random,random_choice},
-    mnist::load_mnist,
-    gradient_descent::{numerical_gradient},
-    error::{cross_entropy_error,sum_squares_error}
-};
-
 
 /*신경망 학습 */
 pub fn main() {
     /*
     학습이란 훈련데이터로부터 가중치 매개변수의 최적값을 자동으로 획득하는것
      */
- 
+
     /*손실함수
     - 일반적으로  오차제곱합과 교차 엔트로피 오차 사용
      */
     //오차제곱합
-    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
+    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]).into_dyn(); //소프트 맥스 함수의 출력
     let t = arr1(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).into_dyn();
     //0일 확률 0.1,1일 확률 0.05, 1은 정답 레이블의 위치를 가르치는 원소 1 그외에는 0으로 표 기 => 원핫인코딩
     // // y= 2일 확률이 제일 높다고 판단함
-    // println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    println!("오차제곱합:{}", sum_squares_error(&y, &t));
     // //0.09750000000000003
-    // let y = arr1(&[0.1, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.6, 0.0, 0.0]); //소프트 맥스 함수의 출력
-    // println!("오차제곱합:{}", sum_squares_error(&y, &t));
+    let mut y = arr1(&[0.1, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.6, 0.0, 0.0]).into_dyn(); //소프트 맥스 함수의 출력
+    println!("오차제곱합:{}", sum_squares_error(&y, &t));
     // //0.5974999999999999 =? 7이 가장 높다고 추정함=>
     /*교차 엔트로피 오차 */
-    println!(
-        "교차 엔트로피:{}",
-        cross_entropy_error(&y.into_dyn(), &t)
-    );
-    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]); //소프트 맥스 함수의 출력
-    println!(
-        "교차 엔트로피:{}",
-        cross_entropy_error(&y.into_dyn(), &t)
-    ); //=>오차제곱합 와 일치
+    println!("교차 엔트로피:{}", cross_entropy_error(&y, &t));
+    let y = arr1(&[0.1, 0.05, 0.6, 0.0, 0.05, 0.1, 0.0, 0.1, 0.0, 0.0]).into_dyn(); //소프트 맥스 함수의 출력
+    println!("교차 엔트로피:{}", cross_entropy_error(&y,  & t)); //=>오차제곱합 와 일치
 
     let x_train = load_mnist().x_train;
     let y_train = load_mnist().y_train;
     let x_test = load_mnist().x_test;
-    let y_test =load_mnist().y_test;
+    let y_test = load_mnist().y_test;
     println!("X train Shape{:?}", x_train.clone().shape()); //60000,784
     println!("Y train Shape{:?}", y_train.clone().shape()); //60000 10
 
@@ -55,14 +47,14 @@ pub fn main() {
     println!("무작위{:?}", batch_mask);
     let x_batch = x_train.select(Axis(0), &batch_mask);
     println!("x_batch:{}", x_batch);
-    let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
-        y_train.select(Axis(0), &batch_mask);
-    println!("y_train::{}", y_batch);
-    println!("{:?}", random_choice(60000, 10));
-    println!(
-        "cross:{:?}",
-        cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
-    );
+    // let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
+    //     y_train.select(Axis(0), &batch_mask);
+    // println!("y_train::{}", y_batch);
+    // println!("{:?}", random_choice(60000, 10));
+    // println!(
+    //     "cross:{:?}",
+    //     cross_entropy_error(&y_train.into_dyn(), &x_train.into_dyn())
+    // );
 
     /*미분
     마라톤 선수 10분에 2km
@@ -103,11 +95,7 @@ pub fn main() {
     //     "학습률이 너무 작은 예{}",
     //     gradient_descent(function_2, arr1(&[-3.0, 4.0]).into_dyn(), 1e-10, 100)
     // );
-
-   
-  
 }
-
 
 fn function_1(x: f64) -> f64 {
     0.01 * x.powf(2.0) + 0.1 * x
@@ -140,6 +128,3 @@ where
     let h = 1e-4; //0.0001
     return (f(x + h) - f(x - h)) / (2.0 * h);
 }
-
-
-

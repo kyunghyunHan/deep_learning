@@ -52,7 +52,7 @@ impl SimpleNet {
     fn loss(self, x: ArrayD<f64>, t: ArrayD<f64>) -> f64 {
         let z = self.predict(x.clone());
         let y = softmax(z);
-        let loss = cross_entropy_error(&y.into_dyn(), &t);
+        let loss = cross_entropy_error(&mut y.into_dyn(), &mut t.into_dyn());
         loss
     }
     fn f_functsion(w: ArrayD<f64>) -> f64 {
