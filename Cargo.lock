@@ -934,6 +934,7 @@ dependencies = [
  "image 0.23.14",
  "itertools 0.10.5",
  "ndarray",
+ "ndarray-rand",
  "ndarray-stats",
  "plotters",
  "polars",
@@ -2202,6 +2203,17 @@ dependencies = [
  "num-traits",
  "rawpointer",
  "rayon",
+]
+
+[[package]]
+name = "ndarray-rand"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65608f937acc725f5b164dcf40f4f0bc5d67dc268ab8a649d3002606718c4588"
+dependencies = [
+ "ndarray",
+ "rand",
+ "rand_distr",
 ]
 
 [[package]]

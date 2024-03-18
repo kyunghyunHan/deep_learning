@@ -14,3 +14,4 @@ pub mod utils;
 pub mod mul_layer;
 pub mod add_layer;
 pub mod simple_mnist;
+pub mod test;

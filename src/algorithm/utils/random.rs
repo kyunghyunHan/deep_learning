@@ -10,13 +10,3 @@ pub fn random_choice(train_size: usize, batch_size: usize) -> Vec<usize> {
 }
 
 
-pub fn fill_with_random(matrix: &mut Array2<f64>, rng: &mut impl Rng) -> Array2<f64> {
-    let mut view = matrix.view_mut();
-
-    for mut row in view.genrows_mut() {
-        for elem in row.iter_mut() {
-            *elem = rng.gen::<f64>();
-        }
-    }
-    view.to_owned()
-}
