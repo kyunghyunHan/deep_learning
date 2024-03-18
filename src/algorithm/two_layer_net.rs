@@ -166,7 +166,7 @@ pub fn main() {
     let mut train_loss_list: Vec<f64> = vec![];
     let mut train_acc_list: Vec<f64> = vec![];
     let mut test_acc_list: Vec<f64> = vec![];
-
+    
     let iter_per_epoch = usize::max(train_size / batch_size, 1);
     //여기부터 문제
     for i in 0..iter_num {
