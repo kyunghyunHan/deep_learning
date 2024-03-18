@@ -69,7 +69,7 @@ impl TwoLayerNet {
         match rank {
             1 => {
                 let y = self.predict(&x).into_dimensionality::<Ix1>().unwrap();
-                let y = y.clone().argmax().unwrap();
+                let y = y.argmax().unwrap();
                 let t = t
                     .clone()
                     .into_dimensionality::<Ix1>()
@@ -141,8 +141,8 @@ impl TwoLayerNet {
 
 pub fn main() {
     let mnist = load_mnist();
-    let x_train = mnist.x_train;
-    let y_train = mnist.y_train;
+    let x_train = mnist.x_train.into_dyn();
+    let y_train = mnist.y_train.into_dyn();
     // let x_test = mnist.x_test;
     // let y_test =mnist.y_test;
 
@@ -150,9 +150,9 @@ pub fn main() {
     let iter_num = 10000; //반복횟수
     let train_size = x_train.shape()[0];
     let batch_size = 100; //미니배치 사이즈
-    let learning_rate = 0.01;
+    let learning_rate = 0.1;
 
-    let mut network = TwoLayerNet::new(784, 50, 10, 0.01);
+    let  network = TwoLayerNet::new(784, 50, 10, 0.01);
     //저장공간
     let mut train_loss_list: Vec<f64> = vec![];
     let mut train_acc_list: Vec<f64> = vec![];
@@ -160,32 +160,31 @@ pub fn main() {
     let iter_per_epoch = usize::max(train_size / batch_size, 1);
     //여기부터 문제
     for i in 0..iter_num {
-        //미니배치 획득
+        let mut network = network.clone(); // 이 부분 추가
+    
+        // 미니배치 획득
         let batch_mask = random_choice(train_size, batch_size);
         let x_batch = x_train.select(Axis(0), &batch_mask).into_dyn();
         let t_batch = y_train.select(Axis(0), &batch_mask).into_dyn();
-
-        //기울기 계산
-        //여기부터 문제
+    
+        // 기울기 계산
         let (w1, w2, b1, b2) = network.numerical_gradient(&x_batch, &t_batch);
-        network.w1 -= &(learning_rate * w1);
-        network.w2 -= &(learning_rate * w2);
-        network.b1 -= &(learning_rate * b1);
-        network.b2 -= &(learning_rate * b2);
-        //매개변수 갱신
-        let loss: f64 = network.loss(&x_batch, &t_batch);
+        network.w1 -= &(learning_rate * &w1);
+        network.w2 -= &(learning_rate * &w2);
+        network.b1 -= &(learning_rate * &b1);
+        network.b2 -= &(learning_rate * &b2);
+    
+        // 매개변수 갱신
+        let loss = network.loss(&x_batch, &t_batch);
         train_loss_list.push(loss);
-        //학습 경과기록
-        //1 epoch당 정확도 계싼
+    
+        // 학습 경과기록
+        // 1 epoch당 정확도 계산
         println!("loss: {}", loss);
         if i % iter_per_epoch == 0 {
-            let train_acc = network
-                .clone()
-                .accuracy(&x_train.clone().into_dyn(), &y_train.clone().into_dyn());
-
+            let train_acc = network.accuracy(&x_train, &y_train);
             train_acc_list.push(train_acc);
             println!("{}", train_acc);
         }
-        // println!("{:?}", train_loss_list);
     }
 }
