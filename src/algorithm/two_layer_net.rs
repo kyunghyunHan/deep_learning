@@ -166,20 +166,17 @@ pub fn main() {
         let batch_mask = random_choice(train_size, batch_size);
         let x_batch = x_train.select(Axis(0), &batch_mask).into_dyn();
         let t_batch = y_train.select(Axis(0), &batch_mask).into_dyn();
-    
-        // 기울기 계산
+        // // 기울기 계산
         let (w1, w2, b1, b2) = network.numerical_gradient(&x_batch, &t_batch);
-        network.w1 -= &(learning_rate * &w1);
-        network.w2 -= &(learning_rate * &w2);
-        network.b1 -= &(learning_rate * &b1);
-        network.b2 -= &(learning_rate * &b2);
+        network.w1 -= &(learning_rate * w1);
+        network.w2 -= &(learning_rate * w2);
+        network.b1 -= &(learning_rate * b1);
+        network.b2 -= &(learning_rate * b2);
     
         // 매개변수 갱신
         let loss = network.loss(&x_batch, &t_batch);
         train_loss_list.push(loss);
     
-        // 학습 경과기록
-        // 1 epoch당 정확도 계산
         println!("loss: {}", loss);
         if i % iter_per_epoch == 0 {
             let train_acc = network.accuracy(&x_train, &y_train);

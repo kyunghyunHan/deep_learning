@@ -7,7 +7,8 @@ use super::utils::{
     random::{ random_choice},
 };
 use ndarray::prelude::*;
-
+use polars::prelude::*;
+use rand::prelude::*;
 
 /*신경망 학습 */
 pub fn main() {
@@ -44,7 +45,7 @@ pub fn main() {
     let batch_size = 10;
     let batch_mask = random_choice(train_size, batch_size); //무작위로 원하는 개수만 꺼내기 =>무작위로 10개씩
     println!("무작위{:?}", batch_mask);
-    let x_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> = x_train.select(Axis(0), &batch_mask);
+    let x_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> = x_train.select(Axis(1), &batch_mask);
     println!("x_batch:{}", x_batch);
     // let y_batch: ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>> =
     //     y_train.select(Axis(0), &batch_mask);
