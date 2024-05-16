@@ -49,3 +49,4 @@ for epoch in range(nb_epochs + 1):
         print('Epoch {:4d}/{} Cost: {:.6f}'.format(
             epoch, nb_epochs, cost.item()
         ))
+
